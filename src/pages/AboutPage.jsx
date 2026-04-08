@@ -1,3 +1,4 @@
+/* --- FILE: src/pages/AboutPage.jsx --- */
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard } from "../components";
@@ -31,7 +32,7 @@ export default function AboutPage() {
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #f9f9f8 60%, transparent)", zIndex: 10 }} />
         <div style={{ position: "relative", zIndex: 20, maxWidth: 700 }}>
           <FadeIn>
-            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, background: `${COLORS.secondaryContainer}30`, color: COLORS.onSecondaryContainer, fontFamily: FONTS.headline, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>ESTABLISHED 2014</span>
+            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, background: `${COLORS.secondaryContainer}30`, color: COLORS.onSecondaryContainer, fontFamily: FONTS.headline, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>ESTABLISHED 2018</span>
             <h1 style={{ fontFamily: FONTS.headline, fontSize: m ? 36 : 72, fontWeight: 800, color: COLORS.primary, lineHeight: 0.92, letterSpacing: m ? "-1px" : "-3px", marginBottom: 20 }}>
               Architects of{!m && <br />} Nigeria's <span style={{ color: COLORS.secondary }}>Circular</span> Future.
             </h1>
@@ -49,7 +50,7 @@ export default function AboutPage() {
               <p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 16, lineHeight: 1.8 }}>Founded to bridge the gap between waste generation and value recovery, RAN has evolved into a national powerhouse driving policy, innovation, and infrastructure across the federation.</p>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: COLORS.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="history" size={20} style={{ color: "#fff" }} /></div>
-                <span style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: m ? 13 : 16 }}>10+ Years of Environmental Advocacy</span>
+                <span style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: m ? 13 : 16 }}>8+ Years of Environmental Advocacy</span>
               </div>
             </div>
           </FadeIn>
@@ -57,7 +58,15 @@ export default function AboutPage() {
             <div style={{ background: COLORS.primary, padding: m ? 28 : 48, borderRadius: 8, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.08 }}><Icon name="eco" size={m ? 100 : 160} style={{ color: "#fff" }} /></div>
               <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 22 : 28, fontWeight: 700, color: "#fff", marginBottom: 14, position: "relative" }}>Our Mission</h3>
-              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative" }}>To professionalize the recycling industry by setting standards, fostering collaborations, and advocating for resource efficiency.</p>
+              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative", marginBottom: 8 }}>
+                To promote effective waste management in Nigeria through education and advocacy, utilizing the 4Rs approach:
+              </p>
+              <ul style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative", paddingLeft: 20 }}>
+                <li>Reduce</li>
+                <li>Reuse</li>
+                <li>Repurpose</li>
+                <li>Recycle</li>
+              </ul>
             </div>
           </FadeIn>
         </div>
@@ -66,7 +75,9 @@ export default function AboutPage() {
             <div style={{ background: COLORS.secondary, padding: m ? 28 : 48, borderRadius: 8, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.08 }}><Icon name="visibility" size={m ? 100 : 160} style={{ color: "#fff" }} /></div>
               <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 22 : 28, fontWeight: 700, color: "#fff", marginBottom: 14, position: "relative" }}>Our Vision</h3>
-              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative" }}>A Nigeria where waste is a catalyst for industrialization and national prosperity.</p>
+              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative" }}>
+                To foster a cleaner and greener Nigeria, where zero waste is achieved through sustainable waste management practices and collective action.
+              </p>
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>
