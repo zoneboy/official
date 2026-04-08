@@ -6,6 +6,7 @@ export const ALL_EVENTS = [
     id: "ev-1",
     month: "Apr",
     day: "30",
+    year: 2026,
     tag: "Conference",
     tagBg: `${COLORS.secondaryContainer}30`,
     title: "3rd Annual Recyclers Conference",
@@ -20,6 +21,7 @@ export const ALL_EVENTS = [
     id: "ev-2",
     month: "Mar",
     day: "18",
+    year: 2026,
     tag: "Workshop",
     tagBg: `${COLORS.primary}15`,
     title: "Business Clinic 1.0",
@@ -34,6 +36,7 @@ export const ALL_EVENTS = [
     id: "ev-3",
     month: "Dec",
     day: "17",
+    year: 2025,
     tag: "Webinar",
     tagBg: `${COLORS.tertiary}15`,
     title: "The NEW TAX LAW",
@@ -42,12 +45,13 @@ export const ALL_EVENTS = [
     loc: "Online (Google Meet)",
     locIcon: "video_call",
     gradient: "linear-gradient(135deg, #90CAF9, #42A5F5)",
-    link: null
+    link: "https://bit.ly/RANWebinarTax" // Dummy link to prove date check works instead of relying on missing link
   },
   {
     id: "ev-4",
     month: "Dec",
     day: "12",
+    year: 2025,
     tag: "Webinar",
     tagBg: `${COLORS.tertiary}15`,
     title: "ELV Recycling in Nigeria",
@@ -56,6 +60,6 @@ export const ALL_EVENTS = [
     loc: "Online (Google Meet)",
     locIcon: "video_call",
     gradient: "linear-gradient(135deg, #FFAB91, #FF7043)",
-    link: null
+    link: "https://bit.ly/RANWebinarELV"
   }
 ];
