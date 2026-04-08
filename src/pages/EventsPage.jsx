@@ -57,24 +57,37 @@ export default function EventsPage() {
 
               return (
                 <FadeIn key={ev.id} delay={i * 0.08}>
-                  <div style={{ display: "flex", flexDirection: m ? "column" : "row", background: COLORS.surfaceContainerLowest, borderRadius: 12, overflow: "hidden" }}>
-                    <div style={{ width: m ? "100%" : 100, background: COLORS.surfaceContainerHigh, display: "flex", flexDirection: m ? "row" : "column", alignItems: "center", justifyContent: m ? "flex-start" : "center", padding: m ? "14px 16px" : "24px 16px", gap: m ? 8 : 0, flexShrink: 0 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.secondary, textTransform: "uppercase", letterSpacing: 2 }}>{ev.month}</span>
-                      <span style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 36, fontWeight: 900 }}>{ev.day}</span>
+                  <div style={{ display: "flex", flexDirection: m ? "column" : "row", background: COLORS.surfaceContainerLowest, borderRadius: 12, overflow: "hidden", border: `1px solid ${COLORS.outlineVariant}20` }}>
+                    
+                    {/* Image / Gradient Placeholder Section */}
+                    <div style={{ 
+                      width: m ? "100%" : 220, 
+                      height: m ? 180 : "auto",
+                      background: ev.image ? `url(${ev.image}) center/cover` : ev.gradient, 
+                      position: "relative",
+                      flexShrink: 0 
+                    }}>
+                      {/* Floating Date Badge */}
+                      <div style={{ position: "absolute", top: 12, left: 12, background: "#fff", padding: "8px 14px", borderRadius: 8, textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: COLORS.secondary, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 2 }}>{ev.month}</span>
+                        <span style={{ fontFamily: FONTS.headline, fontSize: 22, fontWeight: 900, color: COLORS.primary, lineHeight: 1 }}>{ev.day}</span>
+                      </div>
                     </div>
-                    <div style={{ padding: m ? "16px" : "24px", flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+
+                    <div style={{ padding: m ? "16px" : "24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                         <span style={{ background: ev.tagBg, padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{ev.tag}</span>
                         <span style={{ fontSize: 11, color: COLORS.onSurfaceVariant, display: "flex", alignItems: "center", gap: 4 }}><Icon name="schedule" size={14} /> {ev.time}</span>
                       </div>
-                      <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 15 : 17, fontWeight: 700, marginBottom: 6 }}>{ev.title}</h3>
-                      <p style={{ fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 1.6, marginBottom: 10 }}>{ev.desc}</p>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 16 : 18, fontWeight: 700, marginBottom: 8 }}>{ev.title}</h3>
+                      <p style={{ fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 1.6, marginBottom: 14 }}>{ev.desc}</p>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: "auto" }}>
                         <span style={{ fontSize: 12, color: COLORS.tertiary, fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}><Icon name={ev.locIcon} size={14} /> {ev.loc}</span>
                         
                         {/* Render Button or Event Concluded Text based on date */}
                         {isPassed ? (
-                          <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.outline }}>Event Concluded</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.outline, padding: "8px 0" }}>Event Concluded</span>
                         ) : ev.link ? (
                           <SmallButton onClick={() => window.open(ev.link, "_blank", "noopener,noreferrer")}>Register Now</SmallButton>
                         ) : null}

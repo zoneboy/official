@@ -7,6 +7,7 @@ export const ALL_EVENTS = [
     month: "Apr",
     day: "30",
     year: 2026,
+    image: "/conference.jpg",
     tag: "Conference",
     tagBg: `${COLORS.secondaryContainer}30`,
     title: "3rd Annual Recyclers Conference",
