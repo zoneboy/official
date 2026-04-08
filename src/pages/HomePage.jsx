@@ -3,6 +3,7 @@ import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard, SectionTag, SectionTitle, AccentBar, IconLinkButton, PrimaryButton, OutlineButton, NewsletterCTA } from "../components";
 import { ALL_EVENTS } from "../data/events";
+import { ALL_ARTICLES } from "../data/blog";
 
 const BENEFITS = [
   { icon: "verified", title: "Professional Recognition", desc: "Gain industry-standard certifications and a formal voice in the national recycling ecosystem.", color: COLORS.primary },
@@ -11,12 +12,6 @@ const BENEFITS = [
   { icon: "school", title: "Capacity Building", desc: "Access to training and capacity-building programs.", color: COLORS.primary },
   { icon: "handshake", title: "Business Support", desc: "Business development support and partnerships within the recycling value chain.", color: COLORS.secondary },
   { icon: "lightbulb", title: "Innovations & Funding", desc: "Updates on best practices, innovations, industry trends and funding opportunities.", color: COLORS.tertiary },
-];
-
-const NEWS = [
-  { tag: "Policy", tagBg: `${COLORS.secondaryContainer}20`, tagColor: COLORS.secondary, date: "March 28, 2026", title: "National Plastics Ban Policy Update", desc: "Analyzing the implications of the new federal directives on single-use plastics...", gradient: "linear-gradient(135deg, #81C784, #4CAF50)" },
-  { tag: "Spotlight", tagBg: `${COLORS.primary}15`, tagColor: COLORS.primary, date: "March 15, 2026", title: "Member Spotlight: Lagos Innovators", desc: "How a team in Mushin is revolutionizing PET collection using blockchain tracking...", gradient: "linear-gradient(135deg, #AED581, #8BC34A)" },
-  { tag: "Economy", tagBg: `${COLORS.tertiary}15`, tagColor: COLORS.tertiary, date: "March 2, 2026", title: "Q1 Market Trends for Recyclables", desc: "Global commodity prices for scrap metal and paper for Nigerian exporters...", gradient: "linear-gradient(135deg, #80CBC4, #4DB6AC)" },
 ];
 
 export default function HomePage({ setPage }) {
@@ -113,8 +108,8 @@ export default function HomePage({ setPage }) {
             </div>
           </FadeIn>
           <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 20 : 32 }}>
-            {NEWS.map((a, i) => (
-              <FadeIn key={a.title} delay={i * 0.1}>
+            {ALL_ARTICLES.slice(0, 3).map((a, i) => (
+              <FadeIn key={a.id} delay={i * 0.1}>
                 <article>
                   <div style={{ borderRadius: 12, height: m ? 160 : 200, background: a.gradient, marginBottom: 16 }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
