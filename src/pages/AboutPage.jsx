@@ -1,20 +1,67 @@
 /* --- FILE: src/pages/AboutPage.jsx --- */
+import { useState } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard } from "../components";
 
 const LEADERS = [
-  { name: "Oluwaseun Adeyemi", role: "National President", dept: "Executive HQ", initials: "OA" },
-  { name: "Dr. Amina Yusuf", role: "Vice President", dept: "Strategic Planning", initials: "AY" },
-  { name: "Chidi Okoro", role: "Secretary General", dept: "National Secretariat", initials: "CO" },
-  { name: "Funmi Lawson", role: "Financial Director", dept: "Treasury", initials: "FL" },
+  { name: "Rita Idehai", role: "Immediate Past President", dept: "Advisory", initials: "RI" },
+  { name: "Harold Okonoboh", role: "President", dept: "Executive HQ", initials: "HO" },
+  { name: "Victor Okunola", role: "Vice President", dept: "Strategic Planning", initials: "VO" },
+  { name: "Oluwaseyi Olatunbosun", role: "Treasurer", dept: "Treasury", initials: "OO" },
+  { name: "Cajetan Okeke", role: "General Secretary", dept: "National Secretariat", initials: "CO" },
+  { name: "Idu Okeahialam", role: "Public & Social Relations", dept: "Communications", initials: "IO" },
+  { name: "Taofeek Lateef", role: "Provost & Membership Reg. Officer", dept: "Administration", initials: "TL" },
 ];
+
+const REGIONAL_COORDS = [
+  { name: "Daniel Ntia", region: "South-South", initials: "DN" },
+  { name: "Owoeye Femi", region: "North-Central", initials: "OF" },
+  { name: "Hapsat Sali", region: "North-East", initials: "HS" },
+  { name: "Amunnadi Obinna", region: "South-East", initials: "AO" },
+  { name: "Test Test", region: "South-West", initials: "TT" },
+  { name: "Test Test ", region: "North-West", initials: "TT" },
+];
+
 const COORDS = [
-  { name: "Zainab Bello", state: "Kano State", initials: "ZB" },
-  { name: "Emeka Nwachukwu", state: "Lagos State", initials: "EN" },
+  { name: "Uche Orji", state: "Abia State", initials: "UO" },
+  { name: "Sadiq Mahmud", state: "Adamawa State", initials: "SM" },
+  { name: "Blessing Udoh", state: "Akwa Ibom State", initials: "BU" },
+  { name: "Chika Nwosu", state: "Anambra State", initials: "CN" },
+  { name: "Isa Danladi", state: "Bauchi State", initials: "ID" },
+  { name: "Timi Preye", state: "Bayelsa State", initials: "TP" },
+  { name: "Terkura Akem", state: "Benue State", initials: "TA" },
+  { name: "Mustapha Zulum", state: "Borno State", initials: "MZ" },
+  { name: "Etim Bassey", state: "Cross River State", initials: "EB" },
+  { name: "Oghenekaro Efe", state: "Delta State", initials: "OE" },
+  { name: "Nnamdi Chukwu", state: "Ebonyi State", initials: "NC" },
+  { name: "Osaro Igbinedion", state: "Edo State", initials: "OI" },
+  { name: "Femi Adebayo", state: "Ekiti State", initials: "FA" },
+  { name: "Obinna Eze", state: "Enugu State", initials: "OE" },
+  { name: "Aliyu Usman", state: "Gombe State", initials: "AU" },
+  { name: "Emeka Ike", state: "Imo State", initials: "EI" },
+  { name: "Suleiman Danjuma", state: "Jigawa State", initials: "SD" },
   { name: "Ahmed Ibrahim", state: "Kaduna State", initials: "AI" },
-  { name: "Blessing Udoh", state: "Akwa Ibom", initials: "BU" },
+  { name: "Zainab Bello", state: "Kano State", initials: "ZB" },
+  { name: "Kabir Masari", state: "Katsina State", initials: "KM" },
+  { name: "Farouk Aliyu", state: "Kebbi State", initials: "FA" },
+  { name: "Idris Abubakar", state: "Kogi State", initials: "IA" },
+  { name: "Tunde Salman", state: "Kwara State", initials: "TS" },
+  { name: "Emeka Nwachukwu", state: "Lagos State", initials: "EN" },
+  { name: "Tanko Ibrahim", state: "Nasarawa State", initials: "TI" },
+  { name: "Musa Babangida", state: "Niger State", initials: "MB" },
+  { name: "Kunle Afolayan", state: "Ogun State", initials: "KA" },
+  { name: "Segun Adewale", state: "Ondo State", initials: "SA" },
+  { name: "Wale Adeleke", state: "Osun State", initials: "WA" },
+  { name: "Abiola Ojo", state: "Oyo State", initials: "AO" },
+  { name: "Gideon Daling", state: "Plateau State", initials: "GD" },
+  { name: "Tamuno George", state: "Rivers State", initials: "TG" },
+  { name: "Aliyu Shehu", state: "Sokoto State", initials: "AS" },
+  { name: "Danladi Ishaya", state: "Taraba State", initials: "DI" },
+  { name: "Ibrahim Bukar", state: "Yobe State", initials: "IB" },
+  { name: "Abdulaziz Kabir", state: "Zamfara State", initials: "AK" }
 ];
+
 const SDGS = [
   { icon: "recycling", sdg: "SDG 12", label: "Responsible Consumption" },
   { icon: "work", sdg: "SDG 8", label: "Decent Work & Growth" },
@@ -24,6 +71,12 @@ const SDGS = [
 export default function AboutPage() {
   const { isMobile: m } = useBreakpoints();
   const pad = m ? "0 20px" : "0 48px";
+  
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(COORDS.length / itemsPerPage);
+  const startIndex = (page - 1) * itemsPerPage;
+  const currentCoords = COORDS.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <>
@@ -118,10 +171,28 @@ export default function AboutPage() {
               </FadeIn>
             ))}
           </div>
+
+          <FadeIn><h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 20 : 26, fontWeight: 700, marginBottom: 20, borderLeft: `4px solid ${COLORS.secondary}`, paddingLeft: 16 }}>Regional Coordinators</h3></FadeIn>
+          <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 48 }}>
+            {REGIONAL_COORDS.map((c, i) => (
+              <FadeIn key={c.name} delay={i * 0.06}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: COLORS.surfaceContainerLowest, borderRadius: 8, border: `1px solid ${COLORS.outlineVariant}20` }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
+                  </div>
+                  <div>
+                    <h5 style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13 }}>{c.name}</h5>
+                    <p style={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>{c.region} Regional Coordinator</p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
           <FadeIn><h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 20 : 26, fontWeight: 700, marginBottom: 20, borderLeft: `4px solid ${COLORS.secondary}`, paddingLeft: 16 }}>State Coordinators</h3></FadeIn>
           <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "repeat(4, 1fr)", gap: 12 }}>
-            {COORDS.map((c, i) => (
-              <FadeIn key={c.name} delay={i * 0.06}>
+            {currentCoords.map((c, i) => (
+              <FadeIn key={`${c.name}-${i}`} delay={i * 0.04}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: COLORS.surfaceContainerLowest, borderRadius: 8, border: `1px solid ${COLORS.outlineVariant}20` }}>
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
@@ -134,6 +205,54 @@ export default function AboutPage() {
               </FadeIn>
             ))}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <FadeIn delay={0.2}>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 32 }}>
+                <button 
+                  onClick={() => setPage(p => Math.max(1, p - 1))} 
+                  disabled={page === 1}
+                  style={{ 
+                    padding: "10px 20px", 
+                    borderRadius: 24, 
+                    border: `1.5px solid ${page === 1 ? COLORS.surfaceContainerHighest : COLORS.primary}`, 
+                    background: "transparent", 
+                    color: page === 1 ? COLORS.outline : COLORS.primary,
+                    cursor: page === 1 ? "not-allowed" : "pointer", 
+                    fontFamily: FONTS.headline, 
+                    fontWeight: 700, 
+                    fontSize: 13,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Previous
+                </button>
+                <span style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                  Page {page} of {totalPages}
+                </span>
+                <button 
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={page === totalPages}
+                  style={{ 
+                    padding: "10px 20px", 
+                    borderRadius: 24, 
+                    border: `1.5px solid ${page === totalPages ? COLORS.surfaceContainerHighest : COLORS.primary}`, 
+                    background: "transparent", 
+                    color: page === totalPages ? COLORS.outline : COLORS.primary,
+                    cursor: page === totalPages ? "not-allowed" : "pointer", 
+                    fontFamily: FONTS.headline, 
+                    fontWeight: 700, 
+                    fontSize: 13,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </FadeIn>
+          )}
+
         </div>
       </section>
 
