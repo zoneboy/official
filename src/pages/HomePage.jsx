@@ -6,6 +6,9 @@ const BENEFITS = [
   { icon: "verified", title: "Professional Recognition", desc: "Gain industry-standard certifications and a formal voice in the national recycling ecosystem.", color: COLORS.primary },
   { icon: "hub", title: "Industry Networking", desc: "Connect with off-takers, technology providers, and fellow recyclers across all 36 states.", color: COLORS.secondary },
   { icon: "gavel", title: "Policy Influence", desc: "Active participation in government stakeholder meetings to shape national environmental laws.", color: COLORS.tertiary },
+  { icon: "school", title: "Capacity Building", desc: "Access to training and capacity-building programs.", color: COLORS.primary },
+  { icon: "handshake", title: "Business Support", desc: "Business development support and partnerships within the recycling value chain.", color: COLORS.secondary },
+  { icon: "lightbulb", title: "Innovations & Funding", desc: "Updates on best practices, innovations, industry trends and funding opportunities.", color: COLORS.tertiary },
 ];
 const EVENTS_P = [
   { date: "Nov 15", title: "Annual Recycling Forum", desc: "The flagship gathering of Nigeria's waste management leaders and international investors.", gradient: "linear-gradient(135deg, #C8E6C9, #81C784)" },
@@ -38,7 +41,7 @@ export default function HomePage({ setPage }) {
           </FadeIn>
           <FadeIn delay={0.15}>
             <p style={{ fontSize: m ? 15 : 18, color: "rgba(255,255,255,0.75)", maxWidth: 560, lineHeight: 1.7, marginBottom: 28 }}>
-              Advancing the interests of recycling entrepreneurs through policy advocacy, standard setting, and collaborative innovation.
+              Advancing the interests of recycling entrepreneurs through provision of strategic resources, policy advocacy, standard setting, and collaborative innovation.
             </p>
           </FadeIn>
           <FadeIn delay={0.3}>
