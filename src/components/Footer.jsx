@@ -1,3 +1,4 @@
+/* --- FILE: src/components/Footer.jsx --- */
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import Icon from "./Icon";
@@ -35,8 +36,8 @@ export default function Footer({ setPage }) {
         <div>
           <h4 style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, color: COLORS.onSurface, marginBottom: 16 }}>Head Office</h4>
           <address style={{ fontStyle: "normal", fontSize: 13, color: "#64748b", lineHeight: 1.8 }}>
-            Suite 402, Green Building Complex<br />Herbert Macaulay Way, CBD<br />Abuja, FCT, Nigeria
-            <span style={{ display: "block", marginTop: 14, color: COLORS.primary, fontWeight: 700 }}>info@recyclersassociation.org.ng</span>
+            F3, Global Plaza, Kaura District<br />Abuja, FCT, Nigeria
+            <span style={{ display: "block", marginTop: 14, color: COLORS.primary, fontWeight: 700 }}>ran@recyclersassociation.org<br />+234 907 981 9777</span>
           </address>
         </div>
       </div>

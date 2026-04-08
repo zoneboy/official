@@ -1,6 +1,8 @@
+/* --- FILE: src/pages/HomePage.jsx --- */
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard, SectionTag, SectionTitle, AccentBar, IconLinkButton, PrimaryButton, OutlineButton, NewsletterCTA } from "../components";
+import { ALL_EVENTS } from "../data/events";
 
 const BENEFITS = [
   { icon: "verified", title: "Professional Recognition", desc: "Gain industry-standard certifications and a formal voice in the national recycling ecosystem.", color: COLORS.primary },
@@ -10,11 +12,7 @@ const BENEFITS = [
   { icon: "handshake", title: "Business Support", desc: "Business development support and partnerships within the recycling value chain.", color: COLORS.secondary },
   { icon: "lightbulb", title: "Innovations & Funding", desc: "Updates on best practices, innovations, industry trends and funding opportunities.", color: COLORS.tertiary },
 ];
-const EVENTS_P = [
-  { date: "Nov 15", title: "Annual Recycling Forum", desc: "The flagship gathering of Nigeria's waste management leaders and international investors.", gradient: "linear-gradient(135deg, #C8E6C9, #81C784)" },
-  { date: "Dec 02", title: "States Chapter Workshop", desc: "Technical training for state-level coordinators on operational standards and EPR compliance.", gradient: "linear-gradient(135deg, #FFE082, #FFC107)" },
-  { date: "Jan 12", title: "Investors Networking Dinner", desc: "Bridging the gap between recycling innovators and sustainable finance institutions.", gradient: "linear-gradient(135deg, #90CAF9, #42A5F5)" },
-];
+
 const NEWS = [
   { tag: "Policy", tagBg: `${COLORS.secondaryContainer}20`, tagColor: COLORS.secondary, date: "March 28, 2026", title: "National Plastics Ban Policy Update", desc: "Analyzing the implications of the new federal directives on single-use plastics...", gradient: "linear-gradient(135deg, #81C784, #4CAF50)" },
   { tag: "Spotlight", tagBg: `${COLORS.primary}15`, tagColor: COLORS.primary, date: "March 15, 2026", title: "Member Spotlight: Lagos Innovators", desc: "How a team in Mushin is revolutionizing PET collection using blockchain tracking...", gradient: "linear-gradient(135deg, #AED581, #8BC34A)" },
@@ -87,11 +85,11 @@ export default function HomePage({ setPage }) {
             <AccentBar />
           </FadeIn>
           <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 16 : 24 }}>
-            {EVENTS_P.map((ev, i) => (
-              <FadeIn key={ev.title} delay={i * 0.1}>
+            {ALL_EVENTS.slice(0, 3).map((ev, i) => (
+              <FadeIn key={ev.id} delay={i * 0.1}>
                 <div style={{ background: "#fff", borderRadius: 8, overflow: "hidden" }}>
                   <div style={{ height: m ? 140 : 180, background: ev.gradient, position: "relative" }}>
-                    <div style={{ position: "absolute", top: 12, left: 12, background: COLORS.primary, color: "#fff", borderRadius: 6, padding: "5px 10px", fontFamily: FONTS.headline, fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>{ev.date}</div>
+                    <div style={{ position: "absolute", top: 12, left: 12, background: COLORS.primary, color: "#fff", borderRadius: 6, padding: "5px 10px", fontFamily: FONTS.headline, fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>{ev.month} {ev.day}</div>
                   </div>
                   <div style={{ padding: m ? 20 : 28 }}>
                     <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 16 : 18, fontWeight: 700, marginBottom: 8 }}>{ev.title}</h3>
