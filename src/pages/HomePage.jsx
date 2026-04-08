@@ -1,4 +1,5 @@
 /* --- FILE: src/pages/HomePage.jsx --- */
+import { useState } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard, SectionTag, SectionTitle, AccentBar, IconLinkButton, PrimaryButton, OutlineButton, NewsletterCTA } from "../components";
@@ -15,6 +16,7 @@ const BENEFITS = [
 ];
 
 export default function HomePage({ setPage }) {
+  const [selectedImage, setSelectedImage] = useState(null);
   const { isMobile, isTablet } = useBreakpoints();
   const m = isMobile;
   const cols = m ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
@@ -93,9 +95,20 @@ export default function HomePage({ setPage }) {
               activeEvents.map((ev, i) => (
                 <FadeIn key={ev.id} delay={i * 0.1}>
                   <div style={{ background: "#fff", borderRadius: 8, overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
-                    <div style={{ height: m ? 140 : 180, background: ev.gradient, position: "relative" }}>
-                      <div style={{ position: "absolute", top: 12, left: 12, background: COLORS.primary, color: "#fff", borderRadius: 6, padding: "5px 10px", fontFamily: FONTS.headline, fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>{ev.month} {ev.day}</div>
+                    
+                    {/* Image / Gradient Header */}
+                    <div 
+                      style={{ 
+                        height: m ? 140 : 180, 
+                        background: ev.image ? `url(${ev.image}) center/cover` : ev.gradient, 
+                        position: "relative",
+                        cursor: ev.image ? "zoom-in" : "default" 
+                      }}
+                      onClick={() => ev.image && setSelectedImage(ev.image)}
+                    >
+                      <div style={{ position: "absolute", top: 12, left: 12, background: COLORS.primary, color: "#fff", borderRadius: 6, padding: "5px 10px", fontFamily: FONTS.headline, fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>{ev.month} {ev.day}</div>
                     </div>
+
                     <div style={{ padding: m ? 20 : 28, display: "flex", flexDirection: "column", flex: 1 }}>
                       <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 16 : 18, fontWeight: 700, marginBottom: 8 }}>{ev.title}</h3>
                       <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14, lineHeight: 1.6, marginBottom: 14, flex: 1 }}>{ev.desc}</p>
@@ -128,7 +141,16 @@ export default function HomePage({ setPage }) {
             {ALL_ARTICLES.slice(0, 3).map((a, i) => (
               <FadeIn key={a.id} delay={i * 0.1}>
                 <article>
-                  <div style={{ borderRadius: 12, height: m ? 160 : 200, background: a.gradient, marginBottom: 16 }} />
+                  <div 
+                    style={{ 
+                      borderRadius: 12, 
+                      height: m ? 160 : 200, 
+                      background: a.image ? `url(${a.image}) center/cover` : a.gradient, 
+                      marginBottom: 16,
+                      cursor: a.image ? "zoom-in" : "default" 
+                    }} 
+                    onClick={() => a.image && setSelectedImage(a.image)}
+                  />
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                     <span style={{ background: a.tagBg, color: a.tagColor, padding: "3px 10px", borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{a.tag}</span>
                     <span style={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>{a.date}</span>
@@ -144,6 +166,60 @@ export default function HomePage({ setPage }) {
       </section>
 
       <NewsletterCTA />
+
+      {/* Image Modal Popup */}
+      {selectedImage && (
+        <div 
+          onClick={() => setSelectedImage(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(6px)",
+            padding: 20
+          }}
+        >
+          <button 
+            onClick={() => setSelectedImage(null)}
+            style={{
+              position: "absolute",
+              top: m ? 24 : 40,
+              right: m ? 24 : 40,
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "none",
+              color: "#fff",
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "background 0.2s"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+          >
+            <Icon name="close" size={24} />
+          </button>
+          <img 
+            src={selectedImage} 
+            alt="Full view" 
+            style={{
+              maxWidth: "100%",
+              maxHeight: "90vh",
+              borderRadius: 12,
+              objectFit: "contain",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.5)"
+            }} 
+            onClick={(e) => e.stopPropagation()} // Prevent modal from closing when clicking the image itself
+          />
+        </div>
+      )}
     </>
   );
 }

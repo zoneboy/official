@@ -11,6 +11,7 @@ const CAL = [null,null,null,null,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
 export default function EventsPage() {
   const [filter, setFilter] = useState("All Events");
   const [page, setPage] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(null);
   const { isMobile: m } = useBreakpoints();
 
   // Reset pagination to page 1 whenever the filter changes
@@ -60,13 +61,17 @@ export default function EventsPage() {
                   <div style={{ display: "flex", flexDirection: m ? "column" : "row", background: COLORS.surfaceContainerLowest, borderRadius: 12, overflow: "hidden", border: `1px solid ${COLORS.outlineVariant}20` }}>
                     
                     {/* Image / Gradient Placeholder Section */}
-                    <div style={{ 
-                      width: m ? "100%" : 220, 
-                      height: m ? 180 : "auto",
-                      background: ev.image ? `url(${ev.image}) center/cover` : ev.gradient, 
-                      position: "relative",
-                      flexShrink: 0 
-                    }}>
+                    <div 
+                      style={{ 
+                        width: m ? "100%" : 220, 
+                        height: m ? 180 : "auto",
+                        background: ev.image ? `url(${ev.image}) center/cover` : ev.gradient, 
+                        position: "relative",
+                        flexShrink: 0,
+                        cursor: ev.image ? "zoom-in" : "default" 
+                      }}
+                      onClick={() => ev.image && setSelectedImage(ev.image)}
+                    >
                       {/* Floating Date Badge */}
                       <div style={{ position: "absolute", top: 12, left: 12, background: "#fff", padding: "8px 14px", borderRadius: 8, textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
                         <span style={{ fontSize: 10, fontWeight: 800, color: COLORS.secondary, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 2 }}>{ev.month}</span>
@@ -182,6 +187,60 @@ export default function EventsPage() {
           </div>
         )}
       </div>
+
+      {/* Image Modal Popup */}
+      {selectedImage && (
+        <div 
+          onClick={() => setSelectedImage(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(6px)",
+            padding: 20
+          }}
+        >
+          <button 
+            onClick={() => setSelectedImage(null)}
+            style={{
+              position: "absolute",
+              top: m ? 24 : 40,
+              right: m ? 24 : 40,
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "none",
+              color: "#fff",
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "background 0.2s"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+          >
+            <Icon name="close" size={24} />
+          </button>
+          <img 
+            src={selectedImage} 
+            alt="Full view" 
+            style={{
+              maxWidth: "100%",
+              maxHeight: "90vh",
+              borderRadius: 12,
+              objectFit: "contain",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.5)"
+            }} 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </section>
   );
 }
