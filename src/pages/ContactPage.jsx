@@ -2,17 +2,13 @@ import { COLORS, FONTS, GRADIENTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
 
-const HUBS = [
-  { region: "South West Hub", area: "Lagos & Ogun Region", coord: "Engr. Babatunde Alabi", email: "sw@ran.org.ng" },
-  { region: "North Central Hub", area: "FCT & Plateau Region", coord: "Dr. Amina Yusuf", email: "nc@ran.org.ng" },
-  { region: "South East Hub", area: "Enugu & Anambra Region", coord: "Chief Emeka Nwosu", email: "se@ran.org.ng" },
-];
 const STEPS = [
   { num: "01", title: "Application Submission", desc: "Submit operational permit, CAC documents, and environmental impact summary.", bg: COLORS.secondaryContainer, color: COLORS.onSecondaryContainer, rotate: -6, mt: 0 },
   { num: "02", title: "Compliance Review", desc: "Technical committee reviews facility standards against national benchmarks.", bg: COLORS.primaryContainer, color: COLORS.onPrimaryContainer, rotate: 12, mt: 0 },
   { num: "03", title: "Site Verification", desc: "Regional coordinator conducts a brief physical inspection.", bg: COLORS.tertiaryContainer, color: "#fff", rotate: -12, mt: 0 },
   { num: "04", title: "Full Induction", desc: "Receive digital credentials, membership seal, and database access.", bg: COLORS.secondary, color: "#fff", rotate: 6, mt: 0 },
 ];
+
 const BENEFITS = [
   { title: "Policy Advocacy", desc: "We represent your interests at federal and state regulatory levels." },
   { title: "Market Intelligence", desc: "Access weekly reports on global plastic, metal, and fiber pricing." },
@@ -61,35 +57,39 @@ export default function ContactPage() {
               </div>
             </div>
           </FadeIn>
-          {/* Hubs */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <FadeIn delay={0.1}>
-              <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 18 : 22, fontWeight: 700, display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}><Icon name="location_on" fill size={22} style={{ color: COLORS.secondary }} /> Regional Nodes</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {HUBS.map((h) => (
-                  <div key={h.region} style={{ background: COLORS.surfaceContainerHigh, padding: m ? 18 : 22, borderRadius: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <p style={{ color: COLORS.primary, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>{h.region}</p>
-                        <p style={{ fontFamily: FONTS.headline, fontSize: m ? 14 : 16, fontWeight: 700 }}>{h.area}</p>
-                      </div>
-                      <a href={`mailto:${h.email}`} style={{ background: COLORS.surfaceContainerLowest, padding: 8, borderRadius: 8, display: "flex", textDecoration: "none" }}><Icon name="mail" size={16} style={{ color: COLORS.onSurface }} /></a>
+          
+          {/* Direct Secretariat */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <FadeIn delay={0.1} style={{ height: "100%" }}>
+              <div style={{ background: `${COLORS.secondaryFixed}30`, padding: m ? 32 : 48, borderRadius: m ? 20 : 32, border: `1px solid ${COLORS.secondary}15`, height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: COLORS.secondary, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+                  <Icon name="support_agent" size={32} style={{ color: "#fff" }} />
+                </div>
+                <h4 style={{ fontFamily: FONTS.headline, fontWeight: 800, color: COLORS.secondary, fontSize: m ? 24 : 28, marginBottom: 16 }}>Direct Secretariat</h4>
+                <p style={{ fontSize: 15, color: COLORS.onSurfaceVariant, lineHeight: 1.7, marginBottom: 36 }}>For institutional partnerships, national policy inquiries, or general support, our secretariat team is available to assist you.</p>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {/* Phone */}
+                  <a href="tel:+2349079819777" style={{ display: "flex", alignItems: "center", gap: 16, textDecoration: "none" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                      <Icon name="call" size={24} style={{ color: COLORS.secondary }} />
                     </div>
-                    <p style={{ fontSize: 13, color: COLORS.onSurfaceVariant, marginTop: 8 }}>Coordinator: {h.coord}</p>
-                  </div>
-                ))}
-              </div>
-            </FadeIn>
-            <FadeIn delay={0.2}>
-              <div style={{ background: `${COLORS.secondaryFixed}30`, padding: m ? 22 : 28, borderRadius: m ? 20 : 32, border: `1px solid ${COLORS.secondary}15` }}>
-                <h4 style={{ fontFamily: FONTS.headline, fontWeight: 700, color: COLORS.secondary, fontSize: m ? 16 : 18, marginBottom: 10 }}>Direct Secretariat</h4>
-                <p style={{ fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 1.7, marginBottom: 18 }}>For institutional partnerships or national policy inquiries.</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: COLORS.secondary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="call" size={20} style={{ color: "#fff" }} /></div>
-                  <div>
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: COLORS.outline, letterSpacing: 1 }}>Hotline</p>
-                    <p style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: m ? 14 : 16 }}>+234 (0) 800-RECYCLE</p>
-                  </div>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: COLORS.outline, letterSpacing: 1.5, marginBottom: 4 }}>Hotline</p>
+                      <p style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: m ? 16 : 18, color: COLORS.onSurface }}>+234 907 981 9777</p>
+                    </div>
+                  </a>
+
+                  {/* Email */}
+                  <a href="mailto:ran@recyclersassociation.org" style={{ display: "flex", alignItems: "center", gap: 16, textDecoration: "none" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                      <Icon name="mail" size={24} style={{ color: COLORS.secondary }} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: COLORS.outline, letterSpacing: 1.5, marginBottom: 4 }}>Email Us</p>
+                      <p style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: m ? 15 : 16, color: COLORS.onSurface, wordBreak: "break-all" }}>ran@recyclersassociation.org</p>
+                    </div>
+                  </a>
                 </div>
               </div>
             </FadeIn>
@@ -121,7 +121,10 @@ export default function ContactPage() {
           </div>
           <FadeIn delay={0.5}>
             <div style={{ textAlign: "center", marginTop: m ? 36 : 64 }}>
-              <button style={{ background: COLORS.inverseSurface, color: COLORS.secondaryFixed, padding: m ? "16px 32px" : "18px 44px", borderRadius: 32, border: "none", fontFamily: FONTS.headline, fontWeight: 800, fontSize: m ? 14 : 16, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, width: m ? "100%" : "auto", justifyContent: "center" }}>
+              <button 
+                onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")}
+                style={{ background: COLORS.inverseSurface, color: COLORS.secondaryFixed, padding: m ? "16px 32px" : "18px 44px", borderRadius: 32, border: "none", fontFamily: FONTS.headline, fontWeight: 800, fontSize: m ? 14 : 16, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, width: m ? "100%" : "auto", justifyContent: "center" }}
+              >
                 Start Your Registration <Icon name="arrow_forward" size={20} />
               </button>
             </div>
