@@ -1,4 +1,5 @@
 import { COLORS, FONTS } from "../styles/tokens";
+import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard } from "../components";
 
 const LEADERS = [
@@ -8,10 +9,10 @@ const LEADERS = [
   { name: "Funmi Lawson", role: "Financial Director", dept: "Treasury", initials: "FL" },
 ];
 const COORDS = [
-  { name: "Zainab Bello", state: "Kano State Coordinator", initials: "ZB" },
-  { name: "Emeka Nwachukwu", state: "Lagos State Coordinator", initials: "EN" },
-  { name: "Ahmed Ibrahim", state: "Kaduna State Coordinator", initials: "AI" },
-  { name: "Blessing Udoh", state: "Akwa Ibom Coordinator", initials: "BU" },
+  { name: "Zainab Bello", state: "Kano State", initials: "ZB" },
+  { name: "Emeka Nwachukwu", state: "Lagos State", initials: "EN" },
+  { name: "Ahmed Ibrahim", state: "Kaduna State", initials: "AI" },
+  { name: "Blessing Udoh", state: "Akwa Ibom", initials: "BU" },
 ];
 const SDGS = [
   { icon: "recycling", sdg: "SDG 12", label: "Responsible Consumption" },
@@ -20,60 +21,62 @@ const SDGS = [
 ];
 
 export default function AboutPage() {
+  const { isMobile: m } = useBreakpoints();
+  const pad = m ? "0 20px" : "0 48px";
+
   return (
     <>
       {/* Hero */}
-      <section style={{ position: "relative", minHeight: 500, display: "flex", alignItems: "center", background: COLORS.surface, padding: "0 48px", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #f9f9f8 50%, transparent)", zIndex: 10 }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(0,108,12,0.04), rgba(0,108,12,0.02))" }} />
+      <section style={{ position: "relative", minHeight: m ? 360 : 500, display: "flex", alignItems: "center", background: COLORS.surface, padding: m ? "40px 20px" : "0 48px", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #f9f9f8 60%, transparent)", zIndex: 10 }} />
         <div style={{ position: "relative", zIndex: 20, maxWidth: 700 }}>
           <FadeIn>
-            <span style={{ display: "inline-block", padding: "6px 16px", borderRadius: 20, background: `${COLORS.secondaryContainer}30`, color: COLORS.onSecondaryContainer, fontFamily: FONTS.headline, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24 }}>ESTABLISHED 2014</span>
-            <h1 style={{ fontFamily: FONTS.headline, fontSize: 72, fontWeight: 800, color: COLORS.primary, lineHeight: 0.92, letterSpacing: "-3px", marginBottom: 24 }}>
-              Architects of<br />Nigeria's <span style={{ color: COLORS.secondary }}>Circular</span> Future.
+            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, background: `${COLORS.secondaryContainer}30`, color: COLORS.onSecondaryContainer, fontFamily: FONTS.headline, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>ESTABLISHED 2014</span>
+            <h1 style={{ fontFamily: FONTS.headline, fontSize: m ? 36 : 72, fontWeight: 800, color: COLORS.primary, lineHeight: 0.92, letterSpacing: m ? "-1px" : "-3px", marginBottom: 20 }}>
+              Architects of{!m && <br />} Nigeria's <span style={{ color: COLORS.secondary }}>Circular</span> Future.
             </h1>
-            <p style={{ fontSize: 18, color: COLORS.onSurfaceVariant, maxWidth: 520, lineHeight: 1.7 }}>We are the unified voice of the waste management and recycling sector in Nigeria, dedicated to engineering sustainable economic growth through circularity.</p>
+            <p style={{ fontSize: m ? 15 : 18, color: COLORS.onSurfaceVariant, maxWidth: 520, lineHeight: 1.7 }}>We are the unified voice of the waste management and recycling sector in Nigeria.</p>
           </FadeIn>
         </div>
       </section>
 
       {/* Bento */}
-      <section style={{ padding: "100px 32px", maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "7fr 5fr", gap: 24, marginBottom: 24 }}>
+      <section style={{ padding: m ? "48px 20px" : "100px 32px", maxWidth: 1400, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "7fr 5fr", gap: m ? 16 : 24, marginBottom: m ? 16 : 24 }}>
           <FadeIn>
-            <div style={{ background: COLORS.surfaceContainerLow, padding: 48, borderRadius: 8 }}>
-              <h2 style={{ fontFamily: FONTS.headline, fontSize: 36, fontWeight: 700, color: COLORS.primary, marginBottom: 20 }}>Our Legacy</h2>
-              <p style={{ color: COLORS.onSurfaceVariant, fontSize: 16, lineHeight: 1.8 }}>Founded to bridge the gap between waste generation and value recovery, the Recyclers Association of Nigeria (RAN) has evolved into a national powerhouse driving policy, innovation, and infrastructure across the federation.</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 28 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.primary, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="history" size={22} style={{ color: "#fff" }} /></div>
-                <span style={{ fontFamily: FONTS.headline, fontWeight: 700 }}>10+ Years of Environmental Advocacy</span>
+            <div style={{ background: COLORS.surfaceContainerLow, padding: m ? 28 : 48, borderRadius: 8 }}>
+              <h2 style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 36, fontWeight: 700, color: COLORS.primary, marginBottom: 16 }}>Our Legacy</h2>
+              <p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 16, lineHeight: 1.8 }}>Founded to bridge the gap between waste generation and value recovery, RAN has evolved into a national powerhouse driving policy, innovation, and infrastructure across the federation.</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: COLORS.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="history" size={20} style={{ color: "#fff" }} /></div>
+                <span style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: m ? 13 : 16 }}>10+ Years of Environmental Advocacy</span>
               </div>
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <div style={{ background: COLORS.primary, padding: 48, borderRadius: 8, position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.08 }}><Icon name="eco" size={160} style={{ color: "#fff" }} /></div>
-              <h3 style={{ fontFamily: FONTS.headline, fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 18, position: "relative" }}>Our Mission</h3>
-              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 16, lineHeight: 1.8, position: "relative" }}>To professionalize the recycling industry in Nigeria by setting standards, fostering collaborations, and advocating for policies that promote resource efficiency.</p>
+            <div style={{ background: COLORS.primary, padding: m ? 28 : 48, borderRadius: 8, position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.08 }}><Icon name="eco" size={m ? 100 : 160} style={{ color: "#fff" }} /></div>
+              <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 22 : 28, fontWeight: 700, color: "#fff", marginBottom: 14, position: "relative" }}>Our Mission</h3>
+              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative" }}>To professionalize the recycling industry by setting standards, fostering collaborations, and advocating for resource efficiency.</p>
             </div>
           </FadeIn>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "5fr 7fr", gap: m ? 16 : 24 }}>
           <FadeIn delay={0.15}>
-            <div style={{ background: COLORS.secondary, padding: 48, borderRadius: 8, position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.08 }}><Icon name="visibility" size={160} style={{ color: "#fff" }} /></div>
-              <h3 style={{ fontFamily: FONTS.headline, fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 18, position: "relative" }}>Our Vision</h3>
-              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 16, lineHeight: 1.8, position: "relative" }}>A Nigeria where waste is no longer an environmental burden but a catalyst for industrialization and national prosperity.</p>
+            <div style={{ background: COLORS.secondary, padding: m ? 28 : 48, borderRadius: 8, position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.08 }}><Icon name="visibility" size={m ? 100 : 160} style={{ color: "#fff" }} /></div>
+              <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 22 : 28, fontWeight: 700, color: "#fff", marginBottom: 14, position: "relative" }}>Our Vision</h3>
+              <p style={{ color: "rgba(255,255,255,0.88)", fontSize: m ? 14 : 16, lineHeight: 1.8, position: "relative" }}>A Nigeria where waste is a catalyst for industrialization and national prosperity.</p>
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>
-            <div style={{ background: COLORS.surfaceContainerHighest, padding: 48, borderRadius: 8 }}>
-              <h3 style={{ fontFamily: FONTS.headline, fontSize: 28, fontWeight: 700, marginBottom: 24 }}>SDG Alignment</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div style={{ background: COLORS.surfaceContainerHighest, padding: m ? 28 : 48, borderRadius: 8 }}>
+              <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 22 : 28, fontWeight: 700, marginBottom: 20 }}>SDG Alignment</h3>
+              <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "repeat(3, 1fr)", gap: 12 }}>
                 {SDGS.map((s) => (
-                  <div key={s.sdg} style={{ background: COLORS.surfaceContainerLowest, padding: 16, borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                    <Icon name={s.icon} fill size={22} style={{ color: COLORS.primary, marginBottom: 8, display: "block" }} />
-                    <div style={{ fontSize: 10, fontFamily: FONTS.headline, fontWeight: 900, color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: 4 }}>{s.sdg}</div>
+                  <div key={s.sdg} style={{ background: COLORS.surfaceContainerLowest, padding: 14, borderRadius: 8 }}>
+                    <Icon name={s.icon} fill size={20} style={{ color: COLORS.primary, marginBottom: 6, display: "block" }} />
+                    <div style={{ fontSize: 10, fontFamily: FONTS.headline, fontWeight: 900, color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: 3 }}>{s.sdg}</div>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div>
                   </div>
                 ))}
@@ -84,33 +87,33 @@ export default function AboutPage() {
       </section>
 
       {/* Leadership */}
-      <section style={{ padding: "100px 0", background: COLORS.surfaceContainerLow }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px" }}>
+      <section style={{ padding: m ? "48px 0" : "100px 0", background: COLORS.surfaceContainerLow }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: pad }}>
           <FadeIn>
-            <h2 style={{ fontFamily: FONTS.headline, fontSize: 44, fontWeight: 800, letterSpacing: "-1px", marginBottom: 8 }}>Executive Leadership</h2>
-            <p style={{ color: COLORS.onSurfaceVariant, fontSize: 17, maxWidth: 500, marginBottom: 48 }}>Guiding Nigeria's circular economy with expertise, integrity, and visionary governance.</p>
+            <h2 style={{ fontFamily: FONTS.headline, fontSize: m ? 28 : 44, fontWeight: 800, letterSpacing: "-1px", marginBottom: 8 }}>Executive Leadership</h2>
+            <p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 17, maxWidth: 500, marginBottom: 36 }}>Guiding Nigeria's circular economy with expertise and visionary governance.</p>
           </FadeIn>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, marginBottom: 64 }}>
+          <div style={{ display: "grid", gridTemplateColumns: m ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: m ? 12 : 24, marginBottom: 48 }}>
             {LEADERS.map((l, i) => (
               <FadeIn key={l.name} delay={i * 0.08}>
-                <HoverCard bg={COLORS.surfaceContainerLowest} padding="24px">
-                  <div style={{ width: "100%", aspectRatio: "1", background: `linear-gradient(135deg, ${COLORS.surfaceContainerHigh}, ${COLORS.outlineVariant})`, borderRadius: 8, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 40, color: COLORS.outline }}>{l.initials}</span>
+                <HoverCard bg={COLORS.surfaceContainerLowest} padding={m ? "16px" : "24px"}>
+                  <div style={{ width: "100%", aspectRatio: "1", background: `linear-gradient(135deg, ${COLORS.surfaceContainerHigh}, ${COLORS.outlineVariant})`, borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: m ? 28 : 40, color: COLORS.outline }}>{l.initials}</span>
                   </div>
-                  <h4 style={{ fontFamily: FONTS.headline, fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{l.name}</h4>
-                  <p style={{ color: COLORS.primary, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{l.role}</p>
-                  <p style={{ fontSize: 10, color: COLORS.onSurfaceVariant, textTransform: "uppercase", letterSpacing: 2, fontWeight: 900 }}>{l.dept}</p>
+                  <h4 style={{ fontFamily: FONTS.headline, fontSize: m ? 14 : 18, fontWeight: 700, marginBottom: 3 }}>{l.name}</h4>
+                  <p style={{ color: COLORS.primary, fontWeight: 700, fontSize: m ? 11 : 13, marginBottom: 3 }}>{l.role}</p>
+                  <p style={{ fontSize: m ? 9 : 10, color: COLORS.onSurfaceVariant, textTransform: "uppercase", letterSpacing: 2, fontWeight: 900 }}>{l.dept}</p>
                 </HoverCard>
               </FadeIn>
             ))}
           </div>
-          <FadeIn><h3 style={{ fontFamily: FONTS.headline, fontSize: 26, fontWeight: 700, marginBottom: 24, borderLeft: `4px solid ${COLORS.secondary}`, paddingLeft: 20 }}>State Coordinators</h3></FadeIn>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+          <FadeIn><h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 20 : 26, fontWeight: 700, marginBottom: 20, borderLeft: `4px solid ${COLORS.secondary}`, paddingLeft: 16 }}>State Coordinators</h3></FadeIn>
+          <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "repeat(4, 1fr)", gap: 12 }}>
             {COORDS.map((c, i) => (
               <FadeIn key={c.name} delay={i * 0.06}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, background: COLORS.surfaceContainerLowest, borderRadius: 8, border: `1px solid ${COLORS.outlineVariant}20` }}>
-                  <div style={{ width: 52, height: 52, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 16, color: COLORS.outline }}>{c.initials}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: COLORS.surfaceContainerLowest, borderRadius: 8, border: `1px solid ${COLORS.outlineVariant}20` }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
                   </div>
                   <div>
                     <h5 style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13 }}>{c.name}</h5>
@@ -124,24 +127,26 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: "80px 48px" }}>
+      <section style={{ padding: m ? "40px 20px" : "80px 48px" }}>
         <FadeIn>
-          <div style={{ background: COLORS.primaryContainer, borderRadius: 24, padding: "64px 72px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 48, overflow: "hidden" }}>
-            <div style={{ maxWidth: 520 }}>
-              <h2 style={{ fontFamily: FONTS.headline, fontSize: 40, fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 18 }}>Join the Vanguard of Sustainable Nigeria.</h2>
-              <p style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", lineHeight: 1.7, marginBottom: 28 }}>Become a registered member and access professional networks, policy advocacy, and industry standards.</p>
-              <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ background: COLORS.primaryContainer, borderRadius: m ? 16 : 24, padding: m ? "36px 24px" : "64px 72px", display: "flex", flexDirection: m ? "column" : "row", alignItems: m ? "stretch" : "center", justifyContent: "space-between", gap: m ? 28 : 48, overflow: "hidden" }}>
+            <div style={{ maxWidth: m ? "100%" : 520 }}>
+              <h2 style={{ fontFamily: FONTS.headline, fontSize: m ? 26 : 40, fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 14 }}>Join the Vanguard of Sustainable Nigeria.</h2>
+              <p style={{ fontSize: m ? 14 : 16, color: "rgba(255,255,255,0.85)", lineHeight: 1.7, marginBottom: 24 }}>Become a registered member and access professional networks, policy advocacy, and industry standards.</p>
+              <div style={{ display: "flex", flexDirection: m ? "column" : "row", gap: 12 }}>
                 <button style={{ background: COLORS.surface, color: COLORS.primary, padding: "14px 28px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, cursor: "pointer" }}>Apply for Membership</button>
                 <button style={{ background: "transparent", border: "1.5px solid rgba(255,255,255,0.4)", color: "#fff", padding: "14px 28px", borderRadius: 12, fontFamily: FONTS.headline, fontWeight: 700, cursor: "pointer" }}>Download Brochure</button>
               </div>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", padding: 32, borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)", maxWidth: 300 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.secondary, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="verified" size={22} style={{ color: "#fff" }} /></div>
-                <span style={{ fontFamily: FONTS.headline, fontWeight: 700, color: "#fff" }}>Official Certifications</span>
+            {!m && (
+              <div style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", padding: 32, borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)", maxWidth: 300 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.secondary, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="verified" size={22} style={{ color: "#fff" }} /></div>
+                  <span style={{ fontFamily: FONTS.headline, fontWeight: 700, color: "#fff" }}>Official Certifications</span>
+                </div>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.6 }}>Industry certifications that validate your recycling operations to global standards.</p>
               </div>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.6 }}>Industry certifications that validate your recycling operations to global standards.</p>
-            </div>
+            )}
           </div>
         </FadeIn>
       </section>

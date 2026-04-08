@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { COLORS, FONTS, GRADIENTS } from "../styles/tokens";
+import { useBreakpoints } from "../hooks";
+import Icon from "./Icon";
 
 const NAV_ITEMS = [
   { label: "Home", page: "home" },
@@ -11,108 +13,47 @@ const NAV_ITEMS = [
 
 export default function Navbar({ currentPage, setPage }) {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { isMobile } = useBreakpoints();
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handler);
-    return () => window.removeEventListener("scroll", handler);
+    const h = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", h);
+    return () => window.removeEventListener("scroll", h);
   }, []);
 
-  const navigate = (page) => {
-    setPage(page);
-    setMobileOpen(false);
-    window.scrollTo(0, 0);
-  };
+  useEffect(() => { if (!isMobile) setMenuOpen(false); }, [isMobile]);
+
+  const navigate = (p) => { setPage(p); setMenuOpen(false); window.scrollTo(0, 0); };
 
   return (
-    <nav
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: scrolled ? "rgba(250,250,249,0.94)" : "rgba(250,250,249,0.8)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        transition: "all 0.3s",
-        borderBottom: scrolled ? "1px solid rgba(0,0,0,0.04)" : "none",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          maxWidth: 1400,
-          margin: "0 auto",
-          padding: "16px 32px",
-        }}
-      >
-        {/* Logo */}
-        <div
-          onClick={() => navigate("home")}
-          style={{
-            cursor: "pointer",
-            fontFamily: FONTS.headline,
-            fontWeight: 800,
-            fontSize: 16,
-            color: "#14532d",
-            textTransform: "uppercase",
-            letterSpacing: "-0.5px",
-          }}
-        >
-          Recyclers Association of Nigeria
+    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, background: scrolled ? "rgba(250,250,249,0.94)" : "rgba(250,250,249,0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", transition: "all 0.3s", borderBottom: scrolled ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1400, margin: "0 auto", padding: isMobile ? "14px 20px" : "16px 32px" }}>
+        <div onClick={() => navigate("home")} style={{ cursor: "pointer", fontFamily: FONTS.headline, fontWeight: 800, fontSize: isMobile ? 14 : 16, color: "#14532d", textTransform: "uppercase", letterSpacing: "-0.5px" }}>
+          {isMobile ? "RAN" : "Recyclers Association of Nigeria"}
         </div>
-
-        {/* Desktop Links */}
-        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.page}
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(item.page);
-              }}
-              style={{
-                fontFamily: FONTS.headline,
-                fontWeight: 700,
-                fontSize: 13,
-                letterSpacing: "-0.3px",
-                color: currentPage === item.page ? "#15803d" : "#64748b",
-                borderBottom:
-                  currentPage === item.page
-                    ? "2px solid #15803d"
-                    : "2px solid transparent",
-                paddingBottom: 4,
-                textDecoration: "none",
-                transition: "all 0.2s",
-              }}
-            >
-              {item.label}
-            </a>
-          ))}
-
-          <button
-            style={{
-              background: GRADIENTS.primary,
-              color: "#fff",
-              padding: "10px 24px",
-              borderRadius: 12,
-              border: "none",
-              fontFamily: FONTS.headline,
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-          >
-            Member Login
+        {!isMobile && (
+          <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+            {NAV_ITEMS.map((n) => (
+              <a key={n.page} href="#" onClick={(e) => { e.preventDefault(); navigate(n.page); }} style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, color: currentPage === n.page ? "#15803d" : "#64748b", borderBottom: currentPage === n.page ? "2px solid #15803d" : "2px solid transparent", paddingBottom: 4, textDecoration: "none" }}>{n.label}</a>
+            ))}
+            <button style={{ background: GRADIENTS.primary, color: "#fff", padding: "10px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13 }}>Member Login</button>
+          </div>
+        )}
+        {isMobile && (
+          <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", padding: 8 }}>
+            <Icon name={menuOpen ? "close" : "menu"} size={24} style={{ color: COLORS.onSurface }} />
           </button>
-        </div>
+        )}
       </div>
+      {isMobile && menuOpen && (
+        <div style={{ background: COLORS.surfaceContainerLowest, borderTop: "1px solid rgba(0,0,0,0.05)", padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 4 }}>
+          {NAV_ITEMS.map((n) => (
+            <a key={n.page} href="#" onClick={(e) => { e.preventDefault(); navigate(n.page); }} style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 15, color: currentPage === n.page ? COLORS.primary : COLORS.onSurfaceVariant, padding: "12px 8px", borderRadius: 8, background: currentPage === n.page ? `${COLORS.primary}10` : "transparent", textDecoration: "none" }}>{n.label}</a>
+          ))}
+          <button style={{ background: GRADIENTS.primary, color: "#fff", padding: "14px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, marginTop: 8 }}>Member Login</button>
+        </div>
+      )}
     </nav>
   );
 }
