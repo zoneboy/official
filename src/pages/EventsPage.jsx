@@ -49,7 +49,11 @@ export default function EventsPage() {
                     <p style={{ fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 1.6, marginBottom: 10 }}>{ev.desc}</p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                       <span style={{ fontSize: 12, color: COLORS.tertiary, fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}><Icon name={ev.locIcon} size={14} /> {ev.loc}</span>
-                      <SmallButton>Register Now</SmallButton>
+                      {ev.link ? (
+                        <SmallButton onClick={() => window.open(ev.link, "_blank", "noopener,noreferrer")}>Register Now</SmallButton>
+                      ) : (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.outline }}>Event Concluded</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -64,7 +68,7 @@ export default function EventsPage() {
           <div>
             <div style={{ position: "sticky", top: 110, background: COLORS.surfaceContainerLow, borderRadius: 12, padding: 28, border: `1px solid ${COLORS.outlineVariant}15` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <h2 style={{ fontFamily: FONTS.headline, fontSize: 18, fontWeight: 700 }}>May 2026</h2>
+                <h2 style={{ fontFamily: FONTS.headline, fontSize: 18, fontWeight: 700 }}>April 2026</h2>
                 <div style={{ display: "flex", gap: 6 }}>
                   {["chevron_left", "chevron_right"].map((ic) => <button key={ic} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name={ic} size={20} /></button>)}
                 </div>
@@ -72,17 +76,17 @@ export default function EventsPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, textAlign: "center" }}>
                 {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} style={{ fontSize: 10, fontWeight: 700, color: COLORS.onSurfaceVariant, paddingBottom: 12 }}>{d}</div>)}
                 {CAL.map((d, i) => {
-                  const hl = d === 12 || d === 22;
-                  return <div key={i} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: hl ? 700 : 500, borderRadius: "50%", background: d === 12 ? COLORS.primary : d === 22 ? COLORS.secondary : "transparent", color: hl ? "#fff" : d ? COLORS.onSurfaceVariant : "rgba(0,0,0,0.15)" }}>{d || ""}</div>;
+                  const hl = d === 30; // Highlight the 30th for the conference
+                  return <div key={i} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: hl ? 700 : 500, borderRadius: "50%", background: hl ? COLORS.primary : "transparent", color: hl ? "#fff" : d ? COLORS.onSurfaceVariant : "rgba(0,0,0,0.15)" }}>{d || ""}</div>;
                 })}
               </div>
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${COLORS.outlineVariant}30`, display: "flex", gap: 12 }}>
                 <div style={{ flex: 1, background: COLORS.surfaceContainerLowest, padding: 14, borderRadius: 8 }}>
-                  <span style={{ fontFamily: FONTS.headline, fontSize: 24, fontWeight: 900, color: COLORS.primary }}>08</span>
+                  <span style={{ fontFamily: FONTS.headline, fontSize: 24, fontWeight: 900, color: COLORS.primary }}>01</span>
                   <p style={{ fontSize: 10, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: "uppercase" }}>Events this month</p>
                 </div>
                 <div style={{ flex: 1, background: COLORS.surfaceContainerLowest, padding: 14, borderRadius: 8 }}>
-                  <span style={{ fontFamily: FONTS.headline, fontSize: 24, fontWeight: 900, color: COLORS.secondary }}>420</span>
+                  <span style={{ fontFamily: FONTS.headline, fontSize: 24, fontWeight: 900, color: COLORS.secondary }}>850+</span>
                   <p style={{ fontSize: 10, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: "uppercase" }}>Registrations</p>
                 </div>
               </div>
