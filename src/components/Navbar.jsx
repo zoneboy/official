@@ -37,7 +37,12 @@ export default function Navbar({ currentPage, setPage }) {
             {NAV_ITEMS.map((n) => (
               <a key={n.page} href="#" onClick={(e) => { e.preventDefault(); navigate(n.page); }} style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, color: currentPage === n.page ? "#15803d" : "#64748b", borderBottom: currentPage === n.page ? "2px solid #15803d" : "2px solid transparent", paddingBottom: 4, textDecoration: "none" }}>{n.label}</a>
             ))}
-            <button style={{ background: GRADIENTS.primary, color: "#fff", padding: "10px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13 }}>Member Login</button>
+            <button 
+              onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")}
+              style={{ background: GRADIENTS.primary, color: "#fff", padding: "10px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+            >
+              Member Login
+            </button>
           </div>
         )}
         {isMobile && (
@@ -51,7 +56,12 @@ export default function Navbar({ currentPage, setPage }) {
           {NAV_ITEMS.map((n) => (
             <a key={n.page} href="#" onClick={(e) => { e.preventDefault(); navigate(n.page); }} style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 15, color: currentPage === n.page ? COLORS.primary : COLORS.onSurfaceVariant, padding: "12px 8px", borderRadius: 8, background: currentPage === n.page ? `${COLORS.primary}10` : "transparent", textDecoration: "none" }}>{n.label}</a>
           ))}
-          <button style={{ background: GRADIENTS.primary, color: "#fff", padding: "14px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, marginTop: 8 }}>Member Login</button>
+          <button 
+            onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")}
+            style={{ background: GRADIENTS.primary, color: "#fff", padding: "14px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, marginTop: 8, cursor: "pointer" }}
+          >
+            Member Login
+          </button>
         </div>
       )}
     </nav>
