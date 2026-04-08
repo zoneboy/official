@@ -21,6 +21,15 @@ export default function HomePage({ setPage }) {
   const pad = m ? "0 20px" : "0 32px";
   const nav = (p) => { setPage(p); window.scrollTo(0, 0); };
 
+  // Filter out concluded events and grab the top 3 active ones
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const activeEvents = ALL_EVENTS.filter((ev) => {
+    const eventDate = new Date(`${ev.month} ${ev.day}, ${ev.year}`);
+    return eventDate >= today;
+  }).slice(0, 3);
+
   return (
     <>
       {/* Hero */}
@@ -80,20 +89,28 @@ export default function HomePage({ setPage }) {
             <AccentBar />
           </FadeIn>
           <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 16 : 24 }}>
-            {ALL_EVENTS.slice(0, 3).map((ev, i) => (
-              <FadeIn key={ev.id} delay={i * 0.1}>
-                <div style={{ background: "#fff", borderRadius: 8, overflow: "hidden" }}>
-                  <div style={{ height: m ? 140 : 180, background: ev.gradient, position: "relative" }}>
-                    <div style={{ position: "absolute", top: 12, left: 12, background: COLORS.primary, color: "#fff", borderRadius: 6, padding: "5px 10px", fontFamily: FONTS.headline, fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>{ev.month} {ev.day}</div>
+            {activeEvents.length > 0 ? (
+              activeEvents.map((ev, i) => (
+                <FadeIn key={ev.id} delay={i * 0.1}>
+                  <div style={{ background: "#fff", borderRadius: 8, overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
+                    <div style={{ height: m ? 140 : 180, background: ev.gradient, position: "relative" }}>
+                      <div style={{ position: "absolute", top: 12, left: 12, background: COLORS.primary, color: "#fff", borderRadius: 6, padding: "5px 10px", fontFamily: FONTS.headline, fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>{ev.month} {ev.day}</div>
+                    </div>
+                    <div style={{ padding: m ? 20 : 28, display: "flex", flexDirection: "column", flex: 1 }}>
+                      <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 16 : 18, fontWeight: 700, marginBottom: 8 }}>{ev.title}</h3>
+                      <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14, lineHeight: 1.6, marginBottom: 14, flex: 1 }}>{ev.desc}</p>
+                      <IconLinkButton onClick={() => nav("events")}>More Info</IconLinkButton>
+                    </div>
                   </div>
-                  <div style={{ padding: m ? 20 : 28 }}>
-                    <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 16 : 18, fontWeight: 700, marginBottom: 8 }}>{ev.title}</h3>
-                    <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14, lineHeight: 1.6, marginBottom: 14 }}>{ev.desc}</p>
-                    <IconLinkButton onClick={() => nav("events")}>More Info</IconLinkButton>
-                  </div>
+                </FadeIn>
+              ))
+            ) : (
+              <FadeIn>
+                <div style={{ gridColumn: "1 / -1", padding: "40px 0" }}>
+                  <p style={{ color: COLORS.onSurfaceVariant, fontSize: 15 }}>There are no upcoming events at this time. Please check back later.</p>
                 </div>
               </FadeIn>
-            ))}
+            )}
           </div>
         </div>
       </section>
