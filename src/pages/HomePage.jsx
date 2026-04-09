@@ -1,4 +1,3 @@
-/* --- FILE: src/pages/HomePage.jsx --- */
 import { useState } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
@@ -15,7 +14,7 @@ const BENEFITS = [
   { icon: "lightbulb", title: "Innovations & Funding", desc: "Updates on best practices, innovations, industry trends and funding opportunities.", color: COLORS.tertiary },
 ];
 
-export default function HomePage({ setPage }) {
+export default function HomePage({ setPage, setCurrentArticle }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const { isMobile, isTablet } = useBreakpoints();
   const m = isMobile;
@@ -23,7 +22,6 @@ export default function HomePage({ setPage }) {
   const pad = m ? "0 20px" : "0 32px";
   const nav = (p) => { setPage(p); window.scrollTo(0, 0); };
 
-  // Filter out concluded events and grab the top 3 active ones
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -35,7 +33,7 @@ export default function HomePage({ setPage }) {
   return (
     <>
       {/* Hero */}
-      <section style={{ position: "relative", minHeight: m ? 500 : 700, display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, rgba(10, 46, 12, 0.8) 0%, rgba(20, 83, 45, 0.7) 100%), url('/banner.png') center/cover no-repeat" }}>
+      <section style={{ position: "relative", minHeight: m ? 500 : 700, display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, #0a2e0c 0%, #14532d 50%, #1c871e 100%)" }}>
         <div style={{ position: "absolute", inset: 0, opacity: 0.07, backgroundImage: "radial-gradient(circle at 30% 50%, rgba(255,255,255,0.3) 0%, transparent 60%)" }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 800, padding: m ? "40px 20px" : "0 48px" }}>
           <FadeIn>
@@ -96,7 +94,6 @@ export default function HomePage({ setPage }) {
                 <FadeIn key={ev.id} delay={i * 0.1}>
                   <div style={{ background: "#fff", borderRadius: 8, overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
                     
-                    {/* Image / Gradient Header */}
                     <div 
                       style={{ 
                         height: m ? 140 : 180, 
@@ -157,7 +154,12 @@ export default function HomePage({ setPage }) {
                   </div>
                   <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 17 : 20, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>{a.title}</h3>
                   <p style={{ color: COLORS.onSurfaceVariant, lineHeight: 1.7, marginBottom: 12, fontSize: 14 }}>{a.desc}</p>
-                  <a href="#" onClick={(e) => e.preventDefault()} style={{ color: COLORS.secondary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Read Article</a>
+                  <a href="#" onClick={(e) => {
+                    e.preventDefault();
+                    setCurrentArticle(a);
+                    setPage("article");
+                    window.scrollTo(0, 0);
+                  }} style={{ color: COLORS.secondary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Read Article</a>
                 </article>
               </FadeIn>
             ))}
@@ -167,7 +169,6 @@ export default function HomePage({ setPage }) {
 
       <NewsletterCTA />
 
-      {/* Image Modal Popup */}
       {selectedImage && (
         <div 
           onClick={() => setSelectedImage(null)}
@@ -185,22 +186,7 @@ export default function HomePage({ setPage }) {
         >
           <button 
             onClick={() => setSelectedImage(null)}
-            style={{
-              position: "absolute",
-              top: m ? 24 : 40,
-              right: m ? 24 : 40,
-              background: "rgba(255, 255, 255, 0.15)",
-              border: "none",
-              color: "#fff",
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              transition: "background 0.2s"
-            }}
+            style={{ position: "absolute", top: m ? 24 : 40, right: m ? 24 : 40, background: "rgba(255, 255, 255, 0.15)", border: "none", color: "#fff", width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }}
             onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
           >
@@ -209,14 +195,8 @@ export default function HomePage({ setPage }) {
           <img 
             src={selectedImage} 
             alt="Full view" 
-            style={{
-              maxWidth: "100%",
-              maxHeight: "90vh",
-              borderRadius: 12,
-              objectFit: "contain",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.5)"
-            }} 
-            onClick={(e) => e.stopPropagation()} // Prevent modal from closing when clicking the image itself
+            style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 12, objectFit: "contain", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }} 
+            onClick={(e) => e.stopPropagation()} 
           />
         </div>
       )}

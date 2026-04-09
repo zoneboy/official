@@ -1,4 +1,3 @@
-/* --- FILE: src/pages/BlogPage.jsx --- */
 import { useState } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
@@ -7,13 +6,31 @@ import { ALL_ARTICLES } from "../data/blog";
 
 const CATS = ["All Updates", "National", "State News", "Spotlights", "Insights"];
 
-export default function BlogPage() {
+export default function BlogPage({ setPage, setCurrentArticle }) {
   const [active, setActive] = useState("All Updates");
   const { isMobile: m, isTablet } = useBreakpoints();
   const cols = m ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
 
-  // Apply filter logic
   const displayedArticles = active === "All Updates" ? ALL_ARTICLES : ALL_ARTICLES.filter((a) => a.tag === active);
+
+  // Hardcoded mock data for the big featured block
+  const handleFeaturedClick = () => {
+    setCurrentArticle({
+      title: "Nigeria's Circular Economy Road Map 2030",
+      date: "April 02, 2026",
+      tag: "Featured Report",
+      tagBg: COLORS.secondaryContainer,
+      tagColor: COLORS.onSecondaryContainer,
+      gradient: "linear-gradient(135deg, #2E7D32, #388E3C, #43A047)",
+      content: [
+        "The transition to a circular economy in Nigeria is not just an environmental imperative, but a massive economic opportunity. This comprehensive road map details the strategic phases required to overhaul our traditional linear 'take-make-dispose' model.",
+        "By 2030, the Recyclers Association of Nigeria aims to facilitate the diversion of 50% of municipal solid waste from landfills into productive recycling streams. This involves investing heavily in collection infrastructure, standardizing sorting processes, and creating robust local markets for recycled commodities.",
+        "The framework emphasizes public-private partnerships, noting that government policy must align with private sector innovation. Tax incentives, extended producer responsibility (EPR) enforcement, and green financing are highlighted as critical enablers."
+      ]
+    });
+    setPage("article");
+    window.scrollTo(0, 0);
+  };
 
   return (
     <>
@@ -31,7 +48,7 @@ export default function BlogPage() {
               </div>
               <h1 style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 40, fontWeight: 800, color: COLORS.primary, lineHeight: 1.1, letterSpacing: "-1px", marginBottom: 12 }}>Nigeria's Circular Economy Road Map 2030</h1>
               <p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 16, lineHeight: 1.7, marginBottom: 20 }}>A comprehensive strategy to transform Nigeria's waste management sector.</p>
-              <IconLinkButton>Read Full Publication</IconLinkButton>
+              <IconLinkButton onClick={handleFeaturedClick}>Read Full Publication</IconLinkButton>
             </div>
           </div>
         </FadeIn>
@@ -60,7 +77,11 @@ export default function BlogPage() {
                     <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 16 : 18, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>{a.title}</h3>
                     <p style={{ color: COLORS.onSurfaceVariant, fontSize: 13, lineHeight: 1.6, flex: 1, marginBottom: 14 }}>{a.desc}</p>
                     <div style={{ borderTop: `1px solid ${COLORS.outlineVariant}20`, paddingTop: 12 }}>
-                      <IconLinkButton icon="chevron_right">Read More</IconLinkButton>
+                      <IconLinkButton icon="chevron_right" onClick={() => {
+                        setCurrentArticle(a);
+                        setPage("article");
+                        window.scrollTo(0, 0);
+                      }}>Read More</IconLinkButton>
                     </div>
                   </div>
                 </article>
@@ -70,7 +91,6 @@ export default function BlogPage() {
             <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14 }}>No articles found for this category.</p>
           )}
 
-          {/* Newsletter card (only show if viewing All Updates or if desired) */}
           {active === "All Updates" && (
             <FadeIn delay={0.4}>
               <article style={{ display: "flex", flexDirection: "column", background: COLORS.primary, borderRadius: 12, padding: m ? 20 : 28, justifyContent: "space-between", position: "relative", overflow: "hidden", height: "100%" }}>
