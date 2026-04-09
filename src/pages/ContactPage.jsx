@@ -1,4 +1,5 @@
-import { useState } from "react";
+/* --- FILE: src/pages/ContactPage.jsx --- */
+import { useState, useEffect } from "react";
 import { COLORS, FONTS, GRADIENTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
@@ -21,9 +22,27 @@ const BENEFITS = [
 export default function ContactPage() {
   const { isMobile: m } = useBreakpoints();
   
-  // Form State
   const [formData, setFormData] = useState({ name: "", org: "", email: "", message: "" });
-  const [status, setStatus] = useState("idle"); // idle, loading, success
+  const [status, setStatus] = useState("idle");
+  
+  // Human Verification State
+  const [captcha, setCaptcha] = useState({ num1: 0, num2: 0 });
+  const [userAnswer, setUserAnswer] = useState("");
+  const [captchaError, setCaptchaError] = useState(false);
+
+  // Generate the math problem on load
+  const generateCaptcha = () => {
+    setCaptcha({
+      num1: Math.floor(Math.random() * 10) + 1,
+      num2: Math.floor(Math.random() * 10) + 1
+    });
+    setUserAnswer("");
+    setCaptchaError(false);
+  };
+
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,7 +50,15 @@ export default function ContactPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // VERIFICATION CHECK: Did they answer the math question correctly?
+    if (parseInt(userAnswer) !== captcha.num1 + captcha.num2) {
+      setCaptchaError(true);
+      return; // Stop the submission immediately
+    }
+
     setStatus("loading");
+    setCaptchaError(false);
 
     try {
       const response = await fetch("/api/contact", {
@@ -44,6 +71,7 @@ export default function ContactPage() {
 
       setStatus("success");
       setFormData({ name: "", org: "", email: "", message: "" });
+      generateCaptcha(); // Reset the captcha for the next time
     } catch (error) {
       console.error("Contact form error:", error);
       setStatus("idle");
@@ -79,7 +107,7 @@ export default function ContactPage() {
                     </div>
                     <h3 style={{ fontFamily: FONTS.headline, fontSize: 20, fontWeight: 800, marginBottom: 8, color: COLORS.onSurface }}>Message Received</h3>
                     <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Thank you for reaching out. A member of the secretariat will get back to you shortly.</p>
-                    <button onClick={() => setStatus("idle")} style={{ background: "transparent", border: `1.5px solid ${COLORS.outlineVariant}`, color: COLORS.onSurface, padding: "10px 24px", borderRadius: 24, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Send another message</button>
+                    <button onClick={() => { setStatus("idle"); generateCaptcha(); }} style={{ background: "transparent", border: `1.5px solid ${COLORS.outlineVariant}`, color: COLORS.onSurface, padding: "10px 24px", borderRadius: 24, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Send another message</button>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit}>
@@ -101,6 +129,34 @@ export default function ContactPage() {
                       <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Message *</label>
                       <textarea name="message" required value={formData.message} onChange={handleChange} placeholder="How can we assist your mission?" rows={4} style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none", resize: "vertical", fontFamily: FONTS.body }} disabled={status === "loading"} />
                     </div>
+
+                    {/* HUMAN VERIFICATION STEP */}
+                    <div style={{ marginBottom: 24, padding: "16px", background: COLORS.surfaceContainerLowest, borderRadius: 12, border: `1px solid ${captchaError ? COLORS.error : COLORS.outlineVariant + '40'}` }}>
+                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: captchaError ? COLORS.error : COLORS.outline, marginBottom: 8 }}>
+                        Human Verification *
+                      </label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 16, color: COLORS.onSurface }}>
+                          What is {captcha.num1} + {captcha.num2}?
+                        </span>
+                        <input 
+                          type="number" 
+                          required 
+                          value={userAnswer} 
+                          onChange={(e) => {
+                            setUserAnswer(e.target.value);
+                            if (captchaError) setCaptchaError(false); // clear error when typing
+                          }} 
+                          placeholder="Answer" 
+                          style={{ width: 100, padding: "10px 14px", borderRadius: 8, border: `1.5px solid ${captchaError ? COLORS.error : COLORS.outlineVariant}`, background: "#fff", fontSize: 14, outline: "none", color: COLORS.onSurface }} 
+                          disabled={status === "loading"} 
+                        />
+                      </div>
+                      {captchaError && (
+                        <p style={{ color: COLORS.error, fontSize: 12, fontWeight: 600, marginTop: 8, margin: "8px 0 0 0" }}>Incorrect answer. Please try again.</p>
+                      )}
+                    </div>
+
                     <button type="submit" disabled={status === "loading"} style={{ background: GRADIENTS.primary, color: "#fff", padding: "16px 36px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, cursor: status === "loading" ? "not-allowed" : "pointer", width: m ? "100%" : "auto", opacity: status === "loading" ? 0.8 : 1 }}>
                       {status === "loading" ? "Sending..." : "Submit Inquiry"}
                     </button>
