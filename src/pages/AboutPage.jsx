@@ -5,61 +5,61 @@ import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon, HoverCard } from "../components";
 
 const LEADERS = [
-  { name: "Rita Idehai", role: "Immediate Past President", dept: "Advisory", initials: "RI" },
-  { name: "Harold Okonoboh", role: "President", dept: "Executive HQ", initials: "HO" },
-  { name: "Victor Okunola", role: "Vice President", dept: "Strategic Planning", initials: "VO" },
-  { name: "Oluwaseyi Olatunbosun", role: "Treasurer", dept: "Treasury", initials: "OO" },
-  { name: "Cajetan Okeke", role: "General Secretary", dept: "National Secretariat", initials: "CO" },
-  { name: "Idu Okeahialam", role: "Public & Social Relations", dept: "Communications", initials: "IO" },
-  { name: "Taofeek Lateef", role: "Provost & Membership Reg. Officer", dept: "Administration", initials: "TL" },
+  { name: "Rita Idehai", role: "Immediate Past President", dept: "Advisory", initials: "RI", image: "/team/rita.jpg" },
+  { name: "Harold Okonoboh", role: "President", dept: "Executive HQ", initials: "HO", image: "/team/harold.jpg" },
+  { name: "Victor Okunola", role: "Vice President", dept: "Strategic Planning", initials: "VO", image: "/team/victor.jpg" },
+  { name: "Oluwaseyi Olatunbosun", role: "Treasurer", dept: "Treasury", initials: "OO", image: "/team/oluwaseyi.jpg" },
+  { name: "Cajetan Okeke", role: "General Secretary", dept: "National Secretariat", initials: "CO", image: "/team/cajetan.jpg" },
+  { name: "Idu Okeahialam", role: "Public & Social Relations", dept: "Communications", initials: "IO", image: "/team/idu.jpg" },
+  { name: "Taofeek Lateef", role: "Provost & Membership Reg. Officer", dept: "Administration", initials: "TL", image: "/team/taofeek.jpg" },
 ];
 
 const REGIONAL_COORDS = [
-  { name: "Daniel Ntia", region: "South-South", initials: "DN" },
-  { name: "Owoeye Femi", region: "North-Central", initials: "OF" },
-  { name: "Hapsat Sali", region: "North-East", initials: "HS" },
-  { name: "Amunnadi Obinna", region: "South-East", initials: "AO" },
-  { name: "Test Test", region: "South-West", initials: "TT" },
-  { name: "Test Test ", region: "North-West", initials: "TT" },
+  { name: "Daniel Ntia", region: "South-South", initials: "DN", image: "/team/daniel-ntia.jpg" },
+  { name: "Owoeye Femi", region: "North-Central", initials: "OF", image: "/team/owoeye-femi.jpg" },
+  { name: "Hapsat Sali", region: "North-East", initials: "HS", image: "/team/hapsat-sali.jpg" },
+  { name: "Amunnadi Obinna", region: "South-East", initials: "AO", image: "/team/amunnadi-obinna.jpg" },
+  { name: "Test Test", region: "South-West", initials: "TT", image: "" },
+  { name: "Test Test ", region: "North-West", initials: "TT", image: "" },
 ];
 
 const COORDS = [
-  { name: "Uche Orji", state: "Abia State", initials: "UO" },
-  { name: "Sadiq Mahmud", state: "Adamawa State", initials: "SM" },
-  { name: "Blessing Udoh", state: "Akwa Ibom State", initials: "BU" },
-  { name: "Chika Nwosu", state: "Anambra State", initials: "CN" },
-  { name: "Isa Danladi", state: "Bauchi State", initials: "ID" },
-  { name: "Timi Preye", state: "Bayelsa State", initials: "TP" },
-  { name: "Terkura Akem", state: "Benue State", initials: "TA" },
-  { name: "Mustapha Zulum", state: "Borno State", initials: "MZ" },
-  { name: "Etim Bassey", state: "Cross River State", initials: "EB" },
-  { name: "Oghenekaro Efe", state: "Delta State", initials: "OE" },
-  { name: "Nnamdi Chukwu", state: "Ebonyi State", initials: "NC" },
-  { name: "Osaro Igbinedion", state: "Edo State", initials: "OI" },
-  { name: "Femi Adebayo", state: "Ekiti State", initials: "FA" },
-  { name: "Obinna Eze", state: "Enugu State", initials: "OE" },
-  { name: "Aliyu Usman", state: "Gombe State", initials: "AU" },
-  { name: "Emeka Ike", state: "Imo State", initials: "EI" },
-  { name: "Suleiman Danjuma", state: "Jigawa State", initials: "SD" },
-  { name: "Ahmed Ibrahim", state: "Kaduna State", initials: "AI" },
-  { name: "Zainab Bello", state: "Kano State", initials: "ZB" },
-  { name: "Kabir Masari", state: "Katsina State", initials: "KM" },
-  { name: "Farouk Aliyu", state: "Kebbi State", initials: "FA" },
-  { name: "Idris Abubakar", state: "Kogi State", initials: "IA" },
-  { name: "Tunde Salman", state: "Kwara State", initials: "TS" },
-  { name: "Emeka Nwachukwu", state: "Lagos State", initials: "EN" },
-  { name: "Tanko Ibrahim", state: "Nasarawa State", initials: "TI" },
-  { name: "Musa Babangida", state: "Niger State", initials: "MB" },
-  { name: "Kunle Afolayan", state: "Ogun State", initials: "KA" },
-  { name: "Segun Adewale", state: "Ondo State", initials: "SA" },
-  { name: "Wale Adeleke", state: "Osun State", initials: "WA" },
-  { name: "Abiola Ojo", state: "Oyo State", initials: "AO" },
-  { name: "Gideon Daling", state: "Plateau State", initials: "GD" },
-  { name: "Tamuno George", state: "Rivers State", initials: "TG" },
-  { name: "Aliyu Shehu", state: "Sokoto State", initials: "AS" },
-  { name: "Danladi Ishaya", state: "Taraba State", initials: "DI" },
-  { name: "Ibrahim Bukar", state: "Yobe State", initials: "IB" },
-  { name: "Abdulaziz Kabir", state: "Zamfara State", initials: "AK" }
+  { name: "Uche Orji", state: "Abia State", initials: "UO", image: "" },
+  { name: "Sadiq Mahmud", state: "Adamawa State", initials: "SM", image: "" },
+  { name: "Blessing Udoh", state: "Akwa Ibom State", initials: "BU", image: "" },
+  { name: "Chika Nwosu", state: "Anambra State", initials: "CN", image: "" },
+  { name: "Isa Danladi", state: "Bauchi State", initials: "ID", image: "" },
+  { name: "Timi Preye", state: "Bayelsa State", initials: "TP", image: "" },
+  { name: "Terkura Akem", state: "Benue State", initials: "TA", image: "" },
+  { name: "Mustapha Zulum", state: "Borno State", initials: "MZ", image: "" },
+  { name: "Etim Bassey", state: "Cross River State", initials: "EB", image: "" },
+  { name: "Oghenekaro Efe", state: "Delta State", initials: "OE", image: "" },
+  { name: "Nnamdi Chukwu", state: "Ebonyi State", initials: "NC", image: "" },
+  { name: "Osaro Igbinedion", state: "Edo State", initials: "OI", image: "" },
+  { name: "Femi Adebayo", state: "Ekiti State", initials: "FA", image: "" },
+  { name: "Obinna Eze", state: "Enugu State", initials: "OE", image: "" },
+  { name: "Aliyu Usman", state: "Gombe State", initials: "AU", image: "" },
+  { name: "Emeka Ike", state: "Imo State", initials: "EI", image: "" },
+  { name: "Suleiman Danjuma", state: "Jigawa State", initials: "SD", image: "" },
+  { name: "Ahmed Ibrahim", state: "Kaduna State", initials: "AI", image: "" },
+  { name: "Zainab Bello", state: "Kano State", initials: "ZB", image: "" },
+  { name: "Kabir Masari", state: "Katsina State", initials: "KM", image: "" },
+  { name: "Farouk Aliyu", state: "Kebbi State", initials: "FA", image: "" },
+  { name: "Idris Abubakar", state: "Kogi State", initials: "IA", image: "" },
+  { name: "Tunde Salman", state: "Kwara State", initials: "TS", image: "" },
+  { name: "Emeka Nwachukwu", state: "Lagos State", initials: "EN", image: "" },
+  { name: "Tanko Ibrahim", state: "Nasarawa State", initials: "TI", image: "" },
+  { name: "Musa Babangida", state: "Niger State", initials: "MB", image: "" },
+  { name: "Kunle Afolayan", state: "Ogun State", initials: "KA", image: "" },
+  { name: "Segun Adewale", state: "Ondo State", initials: "SA", image: "" },
+  { name: "Wale Adeleke", state: "Osun State", initials: "WA", image: "" },
+  { name: "Abiola Ojo", state: "Oyo State", initials: "AO", image: "" },
+  { name: "Gideon Daling", state: "Plateau State", initials: "GD", image: "" },
+  { name: "Tamuno George", state: "Rivers State", initials: "TG", image: "" },
+  { name: "Aliyu Shehu", state: "Sokoto State", initials: "AS", image: "" },
+  { name: "Danladi Ishaya", state: "Taraba State", initials: "DI", image: "" },
+  { name: "Ibrahim Bukar", state: "Yobe State", initials: "IB", image: "" },
+  { name: "Abdulaziz Kabir", state: "Zamfara State", initials: "AK", image: "" }
 ];
 
 const SDGS = [
@@ -161,8 +161,12 @@ export default function AboutPage() {
             {LEADERS.map((l, i) => (
               <FadeIn key={l.name} delay={i * 0.08}>
                 <HoverCard bg={COLORS.surfaceContainerLowest} padding={m ? "16px" : "24px"}>
-                  <div style={{ width: "100%", aspectRatio: "1", background: `linear-gradient(135deg, ${COLORS.surfaceContainerHigh}, ${COLORS.outlineVariant})`, borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: m ? 28 : 40, color: COLORS.outline }}>{l.initials}</span>
+                  <div style={{ width: "100%", aspectRatio: "1", background: `linear-gradient(135deg, ${COLORS.surfaceContainerHigh}, ${COLORS.outlineVariant})`, borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                    {l.image ? (
+                      <img src={l.image} alt={l.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: m ? 28 : 40, color: COLORS.outline }}>{l.initials}</span>
+                    )}
                   </div>
                   <h4 style={{ fontFamily: FONTS.headline, fontSize: m ? 14 : 18, fontWeight: 700, marginBottom: 3 }}>{l.name}</h4>
                   <p style={{ color: COLORS.primary, fontWeight: 700, fontSize: m ? 11 : 13, marginBottom: 3 }}>{l.role}</p>
@@ -177,8 +181,12 @@ export default function AboutPage() {
             {REGIONAL_COORDS.map((c, i) => (
               <FadeIn key={c.name} delay={i * 0.06}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: COLORS.surfaceContainerLowest, borderRadius: 8, border: `1px solid ${COLORS.outlineVariant}20` }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    {c.image ? (
+                      <img src={c.image} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
+                    )}
                   </div>
                   <div>
                     <h5 style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13 }}>{c.name}</h5>
@@ -194,8 +202,12 @@ export default function AboutPage() {
             {currentCoords.map((c, i) => (
               <FadeIn key={`${c.name}-${i}`} delay={i * 0.04}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: COLORS.surfaceContainerLowest, borderRadius: 8, border: `1px solid ${COLORS.outlineVariant}20` }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    {c.image ? (
+                      <img src={c.image} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 14, color: COLORS.outline }}>{c.initials}</span>
+                    )}
                   </div>
                   <div>
                     <h5 style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13 }}>{c.name}</h5>
