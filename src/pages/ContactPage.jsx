@@ -1,4 +1,4 @@
-/* --- FILE: src/pages/ContactPage.jsx --- */
+import { useState } from "react";
 import { COLORS, FONTS, GRADIENTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
@@ -20,6 +20,36 @@ const BENEFITS = [
 
 export default function ContactPage() {
   const { isMobile: m } = useBreakpoints();
+  
+  // Form State
+  const [formData, setFormData] = useState({ name: "", org: "", email: "", message: "" });
+  const [status, setStatus] = useState("idle"); // idle, loading, success
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("loading");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) throw new Error("Failed to send message");
+
+      setStatus("success");
+      setFormData({ name: "", org: "", email: "", message: "" });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      setStatus("idle");
+      alert("We encountered an issue sending your message. Please try again or use the direct email.");
+    }
+  };
 
   return (
     <>
@@ -34,29 +64,48 @@ export default function ContactPage() {
           </div>
         </FadeIn>
         <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "7fr 5fr", gap: m ? 28 : 48 }}>
-          {/* Form */}
+          
+          {/* Form Section */}
           <FadeIn>
             <div style={{ background: COLORS.surfaceContainerLow, padding: m ? "32px 20px" : 56, borderRadius: m ? 20 : 32, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", right: -60, bottom: -60, width: 240, height: 240, background: `${COLORS.primary}08`, borderRadius: "50%", filter: "blur(40px)" }} />
               <div style={{ position: "relative", zIndex: 10 }}>
                 <h2 style={{ fontFamily: FONTS.headline, fontSize: m ? 22 : 26, fontWeight: 700, marginBottom: 24 }}>Send a Message</h2>
-                <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                  {[{ l: "Full Name", p: "Ifeanyi Okafor" }, { l: "Organization", p: "GreenCycle Ltd" }].map((f) => (
-                    <div key={f.l}>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>{f.l}</label>
-                      <input type="text" placeholder={f.p} style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none", color: COLORS.onSurface }} />
+                
+                {status === "success" ? (
+                  <div style={{ background: COLORS.surfaceContainerLowest, padding: "32px 24px", borderRadius: 16, textAlign: "center", border: `1px solid ${COLORS.outlineVariant}40` }}>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${COLORS.primary}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                      <Icon name="check_circle" size={32} style={{ color: COLORS.primary }} />
                     </div>
-                  ))}
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Email Address</label>
-                  <input type="email" placeholder="contact@organization.ng" style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none" }} />
-                </div>
-                <div style={{ marginBottom: 24 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Message</label>
-                  <textarea placeholder="How can we assist your mission?" rows={4} style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none", resize: "vertical", fontFamily: FONTS.body }} />
-                </div>
-                <button style={{ background: GRADIENTS.primary, color: "#fff", padding: "16px 36px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, cursor: "pointer", width: m ? "100%" : "auto" }}>Submit Inquiry</button>
+                    <h3 style={{ fontFamily: FONTS.headline, fontSize: 20, fontWeight: 800, marginBottom: 8, color: COLORS.onSurface }}>Message Received</h3>
+                    <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Thank you for reaching out. A member of the secretariat will get back to you shortly.</p>
+                    <button onClick={() => setStatus("idle")} style={{ background: "transparent", border: `1.5px solid ${COLORS.outlineVariant}`, color: COLORS.onSurface, padding: "10px 24px", borderRadius: 24, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Send another message</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit}>
+                    <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Full Name *</label>
+                        <input type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="Ifeanyi Okafor" style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none", color: COLORS.onSurface }} disabled={status === "loading"} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Organization</label>
+                        <input type="text" name="org" value={formData.org} onChange={handleChange} placeholder="GreenCycle Ltd" style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none", color: COLORS.onSurface }} disabled={status === "loading"} />
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Email Address *</label>
+                      <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="contact@organization.ng" style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none" }} disabled={status === "loading"} />
+                    </div>
+                    <div style={{ marginBottom: 24 }}>
+                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: COLORS.outline, marginBottom: 8 }}>Message *</label>
+                      <textarea name="message" required value={formData.message} onChange={handleChange} placeholder="How can we assist your mission?" rows={4} style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "none", background: COLORS.surfaceContainerLowest, fontSize: 14, outline: "none", resize: "vertical", fontFamily: FONTS.body }} disabled={status === "loading"} />
+                    </div>
+                    <button type="submit" disabled={status === "loading"} style={{ background: GRADIENTS.primary, color: "#fff", padding: "16px 36px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, cursor: status === "loading" ? "not-allowed" : "pointer", width: m ? "100%" : "auto", opacity: status === "loading" ? 0.8 : 1 }}>
+                      {status === "loading" ? "Sending..." : "Submit Inquiry"}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </FadeIn>
