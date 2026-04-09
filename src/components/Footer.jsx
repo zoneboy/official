@@ -1,16 +1,17 @@
-/* --- FILE: src/components/Footer.jsx --- */
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import Icon from "./Icon";
 
 const LINKS = [
   { title: "Quick Links", items: [{ label: "About Us", page: "about" }, { label: "News", page: "blog" }, { label: "Events", page: "events" }, { label: "Contact", page: "contact" }] },
-  { title: "Resources", items: [{ label: "Membership Guide" }, { label: "Policy Papers" }, { label: "Privacy Policy" }, { label: "Terms of Service" }] },
+  // Added the page property to Membership Guide here:
+  { title: "Resources", items: [{ label: "Membership Guide", page: "membership" }, { label: "Policy Papers" }, { label: "Privacy Policy" }, { label: "Terms of Service" }] },
 ];
 
 export default function Footer({ setPage }) {
   const { isMobile } = useBreakpoints();
   const nav = (p) => { if (p) { setPage(p); window.scrollTo(0, 0); } };
+  
   return (
     <footer style={{ background: "#f5f5f4", paddingTop: isMobile ? 48 : 80, paddingBottom: 40 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "0 20px" : "0 32px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: isMobile ? 32 : 48 }}>
@@ -28,7 +29,7 @@ export default function Footer({ setPage }) {
             <h4 style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, color: COLORS.onSurface, marginBottom: 16 }}>{col.title}</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {col.items.map((it) => (
-                <a key={it.label} href="#" onClick={(e) => { e.preventDefault(); nav(it.page); }} style={{ fontSize: 13, color: "#64748b", textDecoration: "none" }}>{it.label}</a>
+                <a key={it.label} href="#" onClick={(e) => { e.preventDefault(); if(it.page) nav(it.page); }} style={{ fontSize: 13, color: "#64748b", textDecoration: "none" }}>{it.label}</a>
               ))}
             </div>
           </div>

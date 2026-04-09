@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { COLORS, FONTS } from "./styles/tokens";
 import { Navbar, Footer } from "./components";
-import { HomePage, AboutPage, EventsPage, BlogPage, ContactPage, ArticlePage } from "./pages";
+import { HomePage, AboutPage, EventsPage, BlogPage, ContactPage, ArticlePage, MembershipGuidePage } from "./pages"; // <-- added import
 
 export default function App() {
   const [page, setPage] = useState("home");
@@ -9,13 +9,14 @@ export default function App() {
 
   const renderPage = () => {
     switch (page) {
-      case "home":    return <HomePage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
-      case "about":   return <AboutPage />;
-      case "events":  return <EventsPage />;
-      case "blog":    return <BlogPage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
-      case "article": return <ArticlePage setPage={setPage} article={currentArticle} />;
-      case "contact": return <ContactPage />;
-      default:        return <HomePage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
+      case "home":       return <HomePage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
+      case "about":      return <AboutPage />;
+      case "events":     return <EventsPage />;
+      case "blog":       return <BlogPage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
+      case "article":    return <ArticlePage setPage={setPage} article={currentArticle} />;
+      case "contact":    return <ContactPage />;
+      case "membership": return <MembershipGuidePage />; // <-- added route
+      default:           return <HomePage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
     }
   };
 
