@@ -1,3 +1,4 @@
+/* --- FILE: src/pages/ContactPage.jsx --- */
 import { COLORS, FONTS, GRADIENTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
@@ -10,9 +11,11 @@ const STEPS = [
 ];
 
 const BENEFITS = [
-  { title: "Policy Advocacy", desc: "We represent your interests at federal and state regulatory levels." },
-  { title: "Market Intelligence", desc: "Access weekly reports on global plastic, metal, and fiber pricing." },
-  { title: "Induction Grants", desc: "Eligibility for low-interest equipment financing through our banking partners." },
+  { title: "Networking & Insights", desc: "Access to industry insights, and networking opportunities." },
+  { title: "Advocacy & Representation", desc: "Representation in policy discussions and advocacy for recyclers." },
+  { title: "Capacity Building", desc: "Access to training and capacity-building programs." },
+  { title: "Business Support", desc: "Business development support and partnerships within the recycling value chain." },
+  { title: "Innovations & Funding", desc: "Updates on best practices, innovations, industry trends and funding opportunities." },
 ];
 
 export default function ContactPage() {
