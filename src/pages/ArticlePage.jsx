@@ -52,13 +52,48 @@ export default function ArticlePage({ setPage, article }) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24, fontSize: m ? 15 : 17, color: COLORS.onSurfaceVariant, lineHeight: 1.85 }}>
             {article.content ? (
-              article.content.map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))
+              article.content.map((paragraph, i) => {
+                // Formatting bullet points if the text starts with a bullet
+                if (paragraph.startsWith("•")) {
+                  return (
+                    <div key={i} style={{ display: "flex", gap: 12, marginLeft: 16 }}>
+                      <span style={{ color: COLORS.primary, fontWeight: 800 }}>•</span>
+                      <p style={{ margin: 0 }}>{paragraph.replace("• ", "")}</p>
+                    </div>
+                  );
+                }
+                // Formatting bold subheadings if the text ends with a colon
+                if (paragraph.endsWith(":")) {
+                  return <h3 key={i} style={{ fontFamily: FONTS.headline, fontSize: 20, color: COLORS.onSurface, marginTop: 16, marginBottom: -8 }}>{paragraph}</h3>;
+                }
+                return <p key={i}>{paragraph}</p>;
+              })
             ) : (
               <p>Content is currently being updated by the secretariat. Check back soon.</p>
             )}
           </div>
+
+          {/* Author Block */}
+          {(article.author || article.company) && (
+            <div style={{ marginTop: 48, paddingTop: 32, borderTop: `1px solid ${COLORS.outlineVariant}40`, display: "flex", gap: 16, alignItems: "center" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: COLORS.primaryContainer, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 20, fontFamily: FONTS.headline, fontWeight: 800 }}>
+                {article.author ? article.author.charAt(0) : "R"}
+              </div>
+              <div>
+                <p style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 16, color: COLORS.onSurface, marginBottom: 4 }}>
+                  {article.author || "RAN Contributor"}
+                </p>
+                {article.company && (
+                  <p style={{ fontSize: 13, color: COLORS.onSurfaceVariant, marginBottom: 2 }}>{article.company}</p>
+                )}
+                {article.phone && (
+                  <a href={`tel:${article.phone.replace(/[^0-9+]/g, '')}`} style={{ fontSize: 13, color: COLORS.primary, fontWeight: 600, textDecoration: "none" }}>
+                    {article.phone}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </FadeIn>
       </div>
     </article>
