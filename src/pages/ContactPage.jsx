@@ -139,8 +139,8 @@ export default function ContactPage() {
       <section style={{ padding: m ? "48px 20px" : "80px 32px", maxWidth: 1200, margin: "0 auto" }}>
         <FadeIn>
           <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "1fr 1fr", gap: m ? 28 : 56, alignItems: "center" }}>
-            <div style={{ borderRadius: m ? 24 : 48, overflow: "hidden", aspectRatio: "4/3", background: "linear-gradient(135deg, #2E7D32, #43A047)", position: "relative" }}>
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,108,12,0.55), transparent)" }} />
+            <div style={{ borderRadius: m ? 24 : 48, overflow: "hidden", aspectRatio: "4/3", background: "url('/quality-benchmarks.jpg') center/cover no-repeat", position: "relative" }}>
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)" }} />
               <div style={{ position: "absolute", bottom: m ? 20 : 36, left: m ? 20 : 36, color: "#fff" }}>
                 <p style={{ fontFamily: FONTS.headline, fontWeight: 900, fontSize: m ? 20 : 28 }}>Quality Benchmarks</p>
                 <p style={{ opacity: 0.8, fontSize: m ? 12 : 14 }}>Certified Excellence in Waste Management</p>
