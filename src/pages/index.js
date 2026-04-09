@@ -5,3 +5,4 @@ export { default as BlogPage } from "./BlogPage";
 export { default as ContactPage } from "./ContactPage";
 export { default as ArticlePage } from "./ArticlePage";
 export { default as MembershipGuidePage } from "./MembershipGuidePage";
+export { default as AdminPage } from "./AdminPage";

@@ -1,8 +1,8 @@
 {
   "name": "ran-website",
   "private": true,
-  "version": "1.0.0",
-  "description": "Recyclers Association of Nigeria - Official Website",
+  "version": "2.0.0",
+  "description": "Recyclers Association of Nigeria - Official Website with Neon CMS",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

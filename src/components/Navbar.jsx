@@ -15,15 +15,8 @@ export default function Navbar({ currentPage, setPage }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isMobile } = useBreakpoints();
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", h);
-    return () => window.removeEventListener("scroll", h);
-  }, []);
-
+  useEffect(() => { const h = () => setScrolled(window.scrollY > 20); window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h); }, []);
   useEffect(() => { if (!isMobile) setMenuOpen(false); }, [isMobile]);
-
   const navigate = (p) => { setPage(p); setMenuOpen(false); window.scrollTo(0, 0); };
 
   return (
@@ -37,31 +30,17 @@ export default function Navbar({ currentPage, setPage }) {
             {NAV_ITEMS.map((n) => (
               <a key={n.page} href="#" onClick={(e) => { e.preventDefault(); navigate(n.page); }} style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, color: currentPage === n.page ? "#15803d" : "#64748b", borderBottom: currentPage === n.page ? "2px solid #15803d" : "2px solid transparent", paddingBottom: 4, textDecoration: "none" }}>{n.label}</a>
             ))}
-            <button 
-              onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")}
-              style={{ background: GRADIENTS.primary, color: "#fff", padding: "10px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
-            >
-              Member Login
-            </button>
+            <button onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")} style={{ background: GRADIENTS.primary, color: "#fff", padding: "10px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Member Login</button>
           </div>
         )}
-        {isMobile && (
-          <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", padding: 8 }}>
-            <Icon name={menuOpen ? "close" : "menu"} size={24} style={{ color: COLORS.onSurface }} />
-          </button>
-        )}
+        {isMobile && <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", padding: 8 }}><Icon name={menuOpen ? "close" : "menu"} size={24} style={{ color: COLORS.onSurface }} /></button>}
       </div>
       {isMobile && menuOpen && (
         <div style={{ background: COLORS.surfaceContainerLowest, borderTop: "1px solid rgba(0,0,0,0.05)", padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 4 }}>
           {NAV_ITEMS.map((n) => (
             <a key={n.page} href="#" onClick={(e) => { e.preventDefault(); navigate(n.page); }} style={{ fontFamily: FONTS.headline, fontWeight: 700, fontSize: 15, color: currentPage === n.page ? COLORS.primary : COLORS.onSurfaceVariant, padding: "12px 8px", borderRadius: 8, background: currentPage === n.page ? `${COLORS.primary}10` : "transparent", textDecoration: "none" }}>{n.label}</a>
           ))}
-          <button 
-            onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")}
-            style={{ background: GRADIENTS.primary, color: "#fff", padding: "14px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, marginTop: 8, cursor: "pointer" }}
-          >
-            Member Login
-          </button>
+          <button onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")} style={{ background: GRADIENTS.primary, color: "#fff", padding: "14px 24px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, marginTop: 8, cursor: "pointer" }}>Member Login</button>
         </div>
       )}
     </nav>
