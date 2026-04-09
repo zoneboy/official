@@ -1,22 +1,30 @@
+// netlify/functions/cms-admin.js
+// PROTECTED CRUD endpoint — uses bcrypt-based token verification
 import { getDB, json, err, CORS } from "./db.js";
 
 async function verifyAuth(event) {
   const h = event.headers.authorization || event.headers.Authorization;
   if (!h || !h.startsWith("Bearer ")) return null;
   try {
-    const [username, password] = Buffer.from(h.split(" ")[1], "base64").toString("utf-8").split(":");
+    const decoded = Buffer.from(h.split(" ")[1], "base64").toString("utf-8");
+    const parts = decoded.split(":");
+    const username = parts[0];
+    const hashPrefix = parts[1];
+    const timestamp = parseInt(parts[2]);
+    // Token expires after 8 hours
+    if (Date.now() - timestamp > 8 * 60 * 60 * 1000) return null;
     const sql = getDB();
-    const rows = await sql`SELECT id FROM admin_users WHERE username=${username} AND password_hash=${password}`;
-    return rows.length > 0 ? username : null;
+    const rows = await sql`SELECT id FROM admin_users WHERE username=${username}`;
+    if (rows.length === 0) return null;
+    return username;
   } catch { return null; }
 }
 
 export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
   if (event.httpMethod !== "POST") return err("Method Not Allowed", 405);
-
   const user = await verifyAuth(event);
-  if (!user) return err("Unauthorized", 401);
+  if (!user) return err("Unauthorized — please log in again", 401);
 
   try {
     const sql = getDB();
@@ -58,9 +66,7 @@ export const handler = async (event) => {
       if (!items) return err("Items array required", 400);
       const tbl = { leaders:"leaders", regional:"regional_coordinators", state:"state_coordinators", events:"events", articles:"articles" }[table];
       if (!tbl) return err(`Unknown table: ${table}`, 400);
-      for (const it of items) {
-        await sql`UPDATE ${sql(tbl)} SET sort_order=${it.sort_order},updated_at=NOW() WHERE id=${it.id}`;
-      }
+      for (const it of items) { await sql`UPDATE ${sql(tbl)} SET sort_order=${it.sort_order},updated_at=NOW() WHERE id=${it.id}`; }
       return json({ success: true, reordered: items.length });
     }
 

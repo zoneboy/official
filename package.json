@@ -7,10 +7,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "hash-password": "node scripts/hash-password.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
+    "bcryptjs": "^2.4.3",
+    "otpauth": "^9.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
