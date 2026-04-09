@@ -33,7 +33,7 @@ export default function HomePage({ setPage, setCurrentArticle }) {
   return (
     <>
       {/* Hero */}
-      <section style={{ position: "relative", minHeight: m ? 500 : 700, display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, #0a2e0c 0%, #14532d 50%, #1c871e 100%)" }}>
+      <section style={{ position: "relative", minHeight: m ? 500 : 700, display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, rgba(10, 46, 12, 0.8) 0%, rgba(20, 83, 45, 0.7) 100%), url('/banner.png') center/cover no-repeat" }}>
         <div style={{ position: "absolute", inset: 0, opacity: 0.07, backgroundImage: "radial-gradient(circle at 30% 50%, rgba(255,255,255,0.3) 0%, transparent 60%)" }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 800, padding: m ? "40px 20px" : "0 48px" }}>
           <FadeIn>
