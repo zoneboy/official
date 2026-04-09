@@ -17,7 +17,7 @@ export default function NewsletterCTA() {
     
     try {
       // Calls the Netlify function you just created
-      const response = await fetch("/.netlify/functions/subscribe", {
+      const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

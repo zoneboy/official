@@ -1,7 +1,16 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # 1. Explicitly tell Netlify where your backend code lives
+  functions = "netlify/functions" 
 
+# 2. Add this specific redirect for your functions BEFORE the catch-all
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# 3. Leave your React catch-all at the very bottom
 [[redirects]]
   from = "/*"
   to = "/index.html"
