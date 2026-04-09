@@ -33,7 +33,7 @@ export default function HomePage({ setPage, setCurrentArticle }) {
   return (
     <>
       {/* Hero */}
-      <section style={{ position: "relative", minHeight: m ? 500 : 700, display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, rgba(10, 46, 12, 0.8) 0%, rgba(20, 83, 45, 0.7) 100%), url('/banner.png') center/cover no-repeat" }}>
+      <section style={{ position: "relative", minHeight: m ? 500 : 700, display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, #0a2e0c 0%, #14532d 50%, #1c871e 100%)" }}>
         <div style={{ position: "absolute", inset: 0, opacity: 0.07, backgroundImage: "radial-gradient(circle at 30% 50%, rgba(255,255,255,0.3) 0%, transparent 60%)" }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 800, padding: m ? "40px 20px" : "0 48px" }}>
           <FadeIn>
@@ -48,7 +48,7 @@ export default function HomePage({ setPage, setCurrentArticle }) {
           </FadeIn>
           <FadeIn delay={0.3}>
             <div style={{ display: "flex", flexDirection: m ? "column" : "row", gap: 12 }}>
-              <PrimaryButton onClick={() => nav("contact")} style={m ? { width: "100%", textAlign: "center" } : {}}>Join RAN</PrimaryButton>
+              <PrimaryButton onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank", "noopener,noreferrer")} style={m ? { width: "100%", textAlign: "center" } : {}}>Join RAN</PrimaryButton>
               <OutlineButton light onClick={() => nav("about")} style={m ? { width: "100%", textAlign: "center" } : {}}>Our Mission</OutlineButton>
             </div>
           </FadeIn>
@@ -134,35 +134,44 @@ export default function HomePage({ setPage, setCurrentArticle }) {
               <IconLinkButton icon="arrow_right_alt" onClick={() => nav("blog")} style={{ color: COLORS.onSurfaceVariant, fontSize: 14 }}>View All</IconLinkButton>
             </div>
           </FadeIn>
+          
           <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 20 : 32 }}>
-            {ALL_ARTICLES.slice(0, 3).map((a, i) => (
-              <FadeIn key={a.id} delay={i * 0.1}>
-                <article>
-                  <div 
-                    style={{ 
-                      borderRadius: 12, 
-                      height: m ? 160 : 200, 
-                      background: a.image ? `url(${a.image}) center/cover` : a.gradient, 
-                      marginBottom: 16,
-                      cursor: a.image ? "zoom-in" : "default" 
-                    }} 
-                    onClick={() => a.image && setSelectedImage(a.image)}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <span style={{ background: a.tagBg, color: a.tagColor, padding: "3px 10px", borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{a.tag}</span>
-                    <span style={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>{a.date}</span>
-                  </div>
-                  <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 17 : 20, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>{a.title}</h3>
-                  <p style={{ color: COLORS.onSurfaceVariant, lineHeight: 1.7, marginBottom: 12, fontSize: 14 }}>{a.desc}</p>
-                  <a href="#" onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentArticle(a);
-                    setPage("article");
-                    window.scrollTo(0, 0);
-                  }} style={{ color: COLORS.secondary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Read Article</a>
-                </article>
+            {ALL_ARTICLES.length > 0 ? (
+              ALL_ARTICLES.slice(0, 3).map((a, i) => (
+                <FadeIn key={a.id} delay={i * 0.1}>
+                  <article>
+                    <div 
+                      style={{ 
+                        borderRadius: 12, 
+                        height: m ? 160 : 200, 
+                        background: a.image ? `url(${a.image}) center/cover` : a.gradient, 
+                        marginBottom: 16,
+                        cursor: a.image ? "zoom-in" : "default" 
+                      }} 
+                      onClick={() => a.image && setSelectedImage(a.image)}
+                    />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ background: a.tagBg, color: a.tagColor, padding: "3px 10px", borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{a.tag}</span>
+                      <span style={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>{a.date}</span>
+                    </div>
+                    <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 17 : 20, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>{a.title}</h3>
+                    <p style={{ color: COLORS.onSurfaceVariant, lineHeight: 1.7, marginBottom: 12, fontSize: 14 }}>{a.desc}</p>
+                    <a href="#" onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentArticle(a);
+                      setPage("article");
+                      window.scrollTo(0, 0);
+                    }} style={{ color: COLORS.secondary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Read Article</a>
+                  </article>
+                </FadeIn>
+              ))
+            ) : (
+              <FadeIn>
+                <div style={{ gridColumn: "1 / -1", padding: "20px 0" }}>
+                  <p style={{ color: COLORS.onSurfaceVariant, fontSize: 15 }}>No news updates available at the moment.</p>
+                </div>
               </FadeIn>
-            ))}
+            )}
           </div>
         </div>
       </section>

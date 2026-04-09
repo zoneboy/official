@@ -12,49 +12,39 @@ export default function BlogPage({ setPage, setCurrentArticle }) {
   const cols = m ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
 
   const displayedArticles = active === "All Updates" ? ALL_ARTICLES : ALL_ARTICLES.filter((a) => a.tag === active);
-
-  // Hardcoded mock data for the big featured block
-  const handleFeaturedClick = () => {
-    setCurrentArticle({
-      title: "Nigeria's Circular Economy Road Map 2030",
-      date: "April 02, 2026",
-      tag: "Featured Report",
-      tagBg: COLORS.secondaryContainer,
-      tagColor: COLORS.onSecondaryContainer,
-      gradient: "linear-gradient(135deg, #2E7D32, #388E3C, #43A047)",
-      content: [
-        "The transition to a circular economy in Nigeria is not just an environmental imperative, but a massive economic opportunity. This comprehensive road map details the strategic phases required to overhaul our traditional linear 'take-make-dispose' model.",
-        "By 2030, the Recyclers Association of Nigeria aims to facilitate the diversion of 50% of municipal solid waste from landfills into productive recycling streams. This involves investing heavily in collection infrastructure, standardizing sorting processes, and creating robust local markets for recycled commodities.",
-        "The framework emphasizes public-private partnerships, noting that government policy must align with private sector innovation. Tax incentives, extended producer responsibility (EPR) enforcement, and green financing are highlighted as critical enablers."
-      ]
-    });
-    setPage("article");
-    window.scrollTo(0, 0);
-  };
+  
+  // Dynamically set the newest article as the featured post
+  const featured = ALL_ARTICLES.length > 0 ? ALL_ARTICLES[0] : null;
 
   return (
     <>
-      {/* Featured */}
-      <section style={{ maxWidth: 1200, margin: "0 auto", padding: m ? "24px 20px 0" : "48px 32px 0" }}>
-        <FadeIn>
-          <div style={{ borderRadius: 12, overflow: "hidden", display: "grid", gridTemplateColumns: m ? "1fr" : "7fr 5fr", minHeight: m ? "auto" : 480 }}>
-            <div style={{ background: "linear-gradient(135deg, #2E7D32, #388E3C, #43A047)", minHeight: m ? 180 : "auto", position: "relative" }}>
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,108,12,0.2), transparent)" }} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: m ? "28px 20px" : 56, background: COLORS.surfaceContainerLowest }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-                <span style={{ background: COLORS.secondaryContainer, color: COLORS.onSecondaryContainer, padding: "4px 12px", borderRadius: 24, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>Featured Report</span>
-                <span style={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>April 02, 2026</span>
+      {/* Featured Section (Only renders if there is at least one article) */}
+      {featured && (
+        <section style={{ maxWidth: 1200, margin: "0 auto", padding: m ? "24px 20px 0" : "48px 32px 0" }}>
+          <FadeIn>
+            <div style={{ borderRadius: 12, overflow: "hidden", display: "grid", gridTemplateColumns: m ? "1fr" : "7fr 5fr", minHeight: m ? "auto" : 480 }}>
+              <div style={{ background: featured.image ? `url(${featured.image}) center/cover` : featured.gradient, minHeight: m ? 180 : "auto", position: "relative" }}>
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.2), transparent)" }} />
               </div>
-              <h1 style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 40, fontWeight: 800, color: COLORS.primary, lineHeight: 1.1, letterSpacing: "-1px", marginBottom: 12 }}>Nigeria's Circular Economy Road Map 2030</h1>
-              <p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 16, lineHeight: 1.7, marginBottom: 20 }}>A comprehensive strategy to transform Nigeria's waste management sector.</p>
-              <IconLinkButton onClick={handleFeaturedClick}>Read Full Publication</IconLinkButton>
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: m ? "28px 20px" : 56, background: COLORS.surfaceContainerLowest }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+                  <span style={{ background: COLORS.secondaryContainer, color: COLORS.onSecondaryContainer, padding: "4px 12px", borderRadius: 24, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>Latest Feature</span>
+                  <span style={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>{featured.date}</span>
+                </div>
+                <h1 style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 40, fontWeight: 800, color: COLORS.primary, lineHeight: 1.1, letterSpacing: "-1px", marginBottom: 12 }}>{featured.title}</h1>
+                <p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 16, lineHeight: 1.7, marginBottom: 20 }}>{featured.desc}</p>
+                <IconLinkButton onClick={() => {
+                  setCurrentArticle(featured);
+                  setPage("article");
+                  window.scrollTo(0, 0);
+                }}>Read Full Publication</IconLinkButton>
+              </div>
             </div>
-          </div>
-        </FadeIn>
-      </section>
+          </FadeIn>
+        </section>
+      )}
 
-      {/* Grid */}
+      {/* Grid Section */}
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: m ? "32px 20px 60px" : "48px 32px 80px" }}>
         <FadeIn>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
@@ -64,10 +54,12 @@ export default function BlogPage({ setPage, setCurrentArticle }) {
         
         <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 16 : 24 }}>
           {displayedArticles.length > 0 ? (
-            displayedArticles.map((a, i) => (
+            // Skip the first article in the grid IF we are viewing 'All Updates', since it's already highlighted in the featured banner above
+            displayedArticles.slice(active === "All Updates" ? 1 : 0).map((a, i) => (
               <FadeIn key={a.id} delay={i * 0.06}>
                 <article style={{ display: "flex", flexDirection: "column", background: COLORS.surfaceContainerLow, borderRadius: 12, overflow: "hidden", transition: "all 0.3s", height: "100%" }}>
-                  <div style={{ height: m ? 160 : 200, background: a.gradient, position: "relative" }}>
+                  <div style={{ height: m ? 160 : 200, background: a.image ? `url(${a.image}) center/cover` : a.gradient, position: "relative" }}>
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.1), transparent)" }} />
                     <div style={{ position: "absolute", top: 12, left: 12 }}>
                       <span style={{ background: "rgba(255,255,255,0.9)", color: a.tagColor || COLORS.primary, padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{a.tag}</span>
                     </div>
@@ -88,7 +80,7 @@ export default function BlogPage({ setPage, setCurrentArticle }) {
               </FadeIn>
             ))
           ) : (
-            <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14 }}>No articles found for this category.</p>
+            <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14 }}>No older articles found for this category.</p>
           )}
 
           {active === "All Updates" && (
