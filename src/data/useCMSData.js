@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, createElement } from "react";
 import { COLORS } from "../styles/tokens";
 
-const FALLBACK = { leaders: [], regional: [], stateCoords: [], events: [], articles: [] };
+const FALLBACK = { boardOfTrustees: [], leaders: [], regional: [], stateCoords: [], events: [], articles: [] };
 const CMSContext = createContext({ ...FALLBACK, loading: true, error: null });
 
 const TAG_COLORS = {
@@ -25,6 +25,10 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 
 function initials(name) {
   return name ? name.split(" ").map(function(w) { return w[0]; }).join("").slice(0, 2).toUpperCase() : "??";
+}
+
+function xTrustee(r) {
+  return { id: r.id, name: r.name, role: r.role, image: r.image || "", initials: initials(r.name) };
 }
 
 function xLeader(r) {
@@ -96,6 +100,7 @@ export function CMSProvider(props) {
       .then(function(raw) {
         if (!cancelled) {
           setData({
+            boardOfTrustees: (raw.boardOfTrustees || []).map(xTrustee),
             leaders: (raw.leaders || []).map(xLeader),
             regional: (raw.regional || []).map(xRegional),
             stateCoords: (raw.stateCoords || []).map(xState),
@@ -116,6 +121,7 @@ export function CMSProvider(props) {
   }, []);
 
   var value = {
+    boardOfTrustees: data.boardOfTrustees,
     leaders: data.leaders,
     regional: data.regional,
     stateCoords: data.stateCoords,

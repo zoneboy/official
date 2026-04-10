@@ -34,6 +34,9 @@ export const handler = async (event) => {
     if (action === "upsert") {
       const iid = item.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
       switch (table) {
+        case "boardOfTrustees":
+          await sql`INSERT INTO board_of_trustees(id,name,role,image,sort_order,updated_at) VALUES(${iid},${item.name||''},${item.role||''},${item.image||''},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,role=EXCLUDED.role,image=EXCLUDED.image,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
+          break;
         case "leaders":
           await sql`INSERT INTO leaders(id,name,role,dept,image,sort_order,updated_at) VALUES(${iid},${item.name||''},${item.role||''},${item.dept||''},${item.image||''},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,role=EXCLUDED.role,dept=EXCLUDED.dept,image=EXCLUDED.image,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
@@ -58,6 +61,9 @@ export const handler = async (event) => {
     if (action === "delete") {
       if (!id) return err("ID required", 400);
       switch (table) {
+        case "boardOfTrustees":
+          await sql`DELETE FROM board_of_trustees WHERE id = ${id}`;
+          break;
         case "leaders":
           await sql`DELETE FROM leaders WHERE id = ${id}`;
           break;
@@ -84,6 +90,9 @@ export const handler = async (event) => {
       if (!items) return err("Items array required", 400);
       for (const it of items) {
         switch (table) {
+          case "boardOfTrustees":
+            await sql`UPDATE board_of_trustees SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
           case "leaders":
             await sql`UPDATE leaders SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
             break;

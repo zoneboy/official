@@ -4,13 +4,14 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 const S = { bg:"#0a0f0a", card:"#111611", border:"#1e2a1e", accent:"#22c55e", accentDk:"#15803d", text:"#e8f5e9", dim:"#6b8a6b", dimmer:"#4a6b4a", hover:"#1a261a", danger:"#f87171", dangerBg:"#261a1a", dangerBd:"#3a2a2a" };
 
 const FIELD_DEFS = {
+  boardOfTrustees: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
   leaders: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"dept",label:"Department",type:"text"},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
   regional: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"region",label:"Region",type:"select",options:["South-South","North-Central","North-East","South-East","South-West","North-West"]},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
   state: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"state",label:"State",type:"text",required:true},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
   events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Banner URL",type:"text"},{key:"link",label:"Registration Link",type:"text"} ],
   articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image URL",type:"text"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"longtext",ph:"Each paragraph on a new line. Bullets start with •"} ],
 };
-const EMPTY = { leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""} };
+const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""} };
 
 export default function AdminPage({ setPage: setAppPage }) {
   // Auth state
@@ -34,7 +35,7 @@ export default function AdminPage({ setPage: setAppPage }) {
 
   // CMS state
   const [section, setSection] = useState("dashboard");
-  const [data, setData] = useState({ leaders:[], regional:[], state:[], events:[], articles:[] });
+  const [data, setData] = useState({ boardOfTrustees:[], leaders:[], regional:[], state:[], events:[], articles:[] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -48,7 +49,7 @@ export default function AdminPage({ setPage: setAppPage }) {
       const res = await fetch("/api/cms-public");
       if (!res.ok) throw new Error("Fetch failed");
       const raw = await res.json();
-      setData({ leaders: raw.leaders||[], regional: raw.regional||[], state: raw.stateCoords||[], events: (raw.events||[]).map(e=>({...e,event_date:e.event_date?e.event_date.slice(0,10):"",event_time:e.event_time||""})), articles: (raw.articles||[]).map(a=>({...a,publish_date:a.publish_date?a.publish_date.slice(0,10):""})) });
+      setData({ boardOfTrustees: raw.boardOfTrustees||[], leaders: raw.leaders||[], regional: raw.regional||[], state: raw.stateCoords||[], events: (raw.events||[]).map(e=>({...e,event_date:e.event_date?e.event_date.slice(0,10):"",event_time:e.event_time||""})), articles: (raw.articles||[]).map(a=>({...a,publish_date:a.publish_date?a.publish_date.slice(0,10):""})) });
     } catch(e) { console.error(e); }
     setLoading(false);
   },[]);
@@ -147,7 +148,7 @@ export default function AdminPage({ setPage: setAppPage }) {
     </div>
   );
 
-  const NAV = [{id:"dashboard",label:"Dashboard",icon:"◉"},{id:"leaders",label:"Executive Leadership",icon:"★"},{id:"regional",label:"Regional Coordinators",icon:"◈"},{id:"state",label:"State Coordinators",icon:"◇"},{id:"events",label:"Events",icon:"▸"},{id:"articles",label:"News & Articles",icon:"▤"},{id:"security",label:"Security (2FA)",icon:"🔒"}];
+  const NAV = [{id:"dashboard",label:"Dashboard",icon:"◉"},{id:"boardOfTrustees",label:"Board of Trustees",icon:"⬡"},{id:"leaders",label:"Executive Leadership",icon:"★"},{id:"regional",label:"Regional Coordinators",icon:"◈"},{id:"state",label:"State Coordinators",icon:"◇"},{id:"events",label:"Events",icon:"▸"},{id:"articles",label:"News & Articles",icon:"▤"},{id:"security",label:"Security (2FA)",icon:"🔒"}];
 
   const renderList = (title,sub,items,type,cols,onAdd) => (
     <div>
@@ -175,7 +176,7 @@ export default function AdminPage({ setPage: setAppPage }) {
       <h2 style={{fontSize:26,fontWeight:800,color:S.text,marginBottom:6}}>Dashboard</h2>
       <p style={{color:S.dim,fontSize:13,marginBottom:32}}>Overview of your website content</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14}}>
-        {[{l:"Leaders",c:data.leaders.length,cl:S.accent,s:"leaders"},{l:"Regional",c:data.regional.length,cl:"#f59e0b",s:"regional"},{l:"State",c:data.state.length,cl:"#8b5cf6",s:"state"},{l:"Events",c:data.events.length,cl:"#06b6d4",s:"events"},{l:"Articles",c:data.articles.length,cl:"#ec4899",s:"articles"}].map(x=>
+        {[{l:"Trustees",c:data.boardOfTrustees.length,cl:"#f97316",s:"boardOfTrustees"},{l:"Leaders",c:data.leaders.length,cl:S.accent,s:"leaders"},{l:"Regional",c:data.regional.length,cl:"#f59e0b",s:"regional"},{l:"State",c:data.state.length,cl:"#8b5cf6",s:"state"},{l:"Events",c:data.events.length,cl:"#06b6d4",s:"events"},{l:"Articles",c:data.articles.length,cl:"#ec4899",s:"articles"}].map(x=>
           <div key={x.l} onClick={()=>setSection(x.s)} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:14,padding:"24px 20px",cursor:"pointer",position:"relative",overflow:"hidden"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=x.cl+"44";e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=S.border;e.currentTarget.style.transform="none";}}>
             <p style={{fontSize:36,fontWeight:900,color:x.cl,letterSpacing:-2}}>{x.c}</p><p style={{fontSize:12,fontWeight:600,color:S.dim}}>{x.l}</p></div>
         )}
@@ -249,6 +250,7 @@ export default function AdminPage({ setPage: setAppPage }) {
 
   const renderContent = () => {
     switch(section) {
+      case "boardOfTrustees": return renderList("Board of Trustees",`${data.boardOfTrustees.length} members`,data.boardOfTrustees,"boardOfTrustees",[i=>i.name||"(Unnamed)",i=>i.role||"(No role)"],()=>{setEditItem({id:uid(),...EMPTY.boardOfTrustees});setEditType("boardOfTrustees");});
       case "leaders": return renderList("Executive Leadership",`${data.leaders.length} members`,data.leaders,"leaders",[i=>i.name||"(Unnamed)",i=>`${i.role} — ${i.dept}`],()=>{setEditItem({id:uid(),...EMPTY.leaders});setEditType("leaders");});
       case "regional": return renderList("Regional Coordinators",`${data.regional.length} coordinators`,data.regional,"regional",[i=>i.name||"(Unnamed)",i=>`${i.region} Region`],()=>{setEditItem({id:uid(),...EMPTY.regional});setEditType("regional");});
       case "state": return renderList("State Coordinators",`${data.state.length} coordinators`,data.state,"state",[i=>i.name||"(Unnamed)",i=>i.state],()=>{setEditItem({id:uid(),...EMPTY.state});setEditType("state");});

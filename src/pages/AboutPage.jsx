@@ -13,7 +13,7 @@ const SDGS = [
 export default function AboutPage() {
   const { isMobile: m } = useBreakpoints();
   const pad = m ? "0 20px" : "0 48px";
-  const { leaders: LEADERS, regional: REGIONAL_COORDS, stateCoords: COORDS, loading } = useCMSData();
+  const { boardOfTrustees: TRUSTEES, leaders: LEADERS, regional: REGIONAL_COORDS, stateCoords: COORDS, loading } = useCMSData();
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
@@ -62,6 +62,24 @@ export default function AboutPage() {
               {SDGS.map((s) => <div key={s.sdg} style={{ background: COLORS.surfaceContainerLowest, padding: 14, borderRadius: 8 }}><Icon name={s.icon} fill size={20} style={{ color: COLORS.primary, marginBottom: 6, display: "block" }} /><div style={{ fontSize: 10, fontFamily: FONTS.headline, fontWeight: 900, color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: 3 }}>{s.sdg}</div><div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div></div>)}
             </div>
           </div></FadeIn>
+        </div>
+      </section>
+
+      {/* Board of Trustees */}
+      <section style={{ padding: m ? "48px 0" : "100px 0", background: COLORS.surface }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: pad }}>
+          <FadeIn><h2 style={{ fontFamily: FONTS.headline, fontSize: m ? 28 : 44, fontWeight: 800, letterSpacing: "-1px", marginBottom: 8 }}>Board of Trustees</h2><p style={{ color: COLORS.onSurfaceVariant, fontSize: m ? 14 : 17, maxWidth: 500, marginBottom: 36 }}>The custodians of our mission, ensuring integrity and strategic direction.</p></FadeIn>
+          {loading ? <p style={{ color: COLORS.onSurfaceVariant }}>Loading...</p> : TRUSTEES.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: m ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: m ? 12 : 24 }}>
+            {TRUSTEES.map((t, i) => <FadeIn key={t.name+i} delay={i*0.08}><HoverCard bg={COLORS.surfaceContainerLowest} padding={m?"16px":"24px"}>
+              <div style={{ width: "100%", aspectRatio: "1", background: `linear-gradient(135deg,${COLORS.primaryContainer},${COLORS.secondaryContainer})`, borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                {t.image ? <img src={t.image} alt={t.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: m?28:40, color: COLORS.outline }}>{t.initials}</span>}
+              </div>
+              <h4 style={{ fontFamily: FONTS.headline, fontSize: m?14:18, fontWeight: 700, marginBottom: 3 }}>{t.name || "(Vacant)"}</h4>
+              <p style={{ color: COLORS.secondary, fontWeight: 700, fontSize: m?11:13 }}>{t.role}</p>
+            </HoverCard></FadeIn>)}
+          </div>
+          ) : <p style={{ color: COLORS.onSurfaceVariant, textAlign: "center", padding: "40px 0" }}>Board members coming soon.</p>}
         </div>
       </section>
 

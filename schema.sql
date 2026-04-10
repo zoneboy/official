@@ -3,6 +3,12 @@
 -- Run this ONCE in the Neon SQL Editor (https://console.neon.tech)
 -- =============================================================================
 
+CREATE TABLE IF NOT EXISTS board_of_trustees (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', role TEXT NOT NULL DEFAULT '',
+  image TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS leaders (
   id TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', role TEXT NOT NULL DEFAULT '',
   dept TEXT NOT NULL DEFAULT '', image TEXT NOT NULL DEFAULT '',
@@ -46,6 +52,15 @@ CREATE TABLE IF NOT EXISTS admin_users (
 -- ═══════════════════════════════════════════════════════
 -- SEED DATA (same as before — leaders, coordinators, events, articles)
 -- ═══════════════════════════════════════════════════════
+INSERT INTO board_of_trustees (id,name,role,sort_order) VALUES
+  ('bt1','','Chairman',1),
+  ('bt2','','Vice Chairman',2),
+  ('bt3','','Secretary',3),
+  ('bt4','','Treasurer',4),
+  ('bt5','','Member',5),
+  ('bt6','','Member',6)
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO leaders (id,name,role,dept,sort_order) VALUES
   ('l1','Rita Idehai','Immediate Past President','Advisory',1),
   ('l2','Harold Okonoboh','President','Executive HQ',2),
