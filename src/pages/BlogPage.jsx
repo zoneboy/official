@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
-import { FadeIn, Icon, PillButton, IconLinkButton } from "../components";
+import { FadeIn, Icon, PillButton, IconLinkButton, NewsletterCTA } from "../components";
 import { useCMSData } from "../data/useCMSData";
 
 const CATS = ["All Updates","National","State News","Spotlights","Insights"];
@@ -54,14 +54,7 @@ export default function BlogPage({ setPage, setCurrentArticle }) {
             </article></FadeIn>
           )) : <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14 }}>No articles found for this category.</p>}
 
-          {active === "All Updates" && <FadeIn delay={0.4}><article style={{ display: "flex", flexDirection: "column", background: COLORS.primary, borderRadius: 12, padding: m?20:28, justifyContent: "space-between", position: "relative", overflow: "hidden", height: "100%" }}>
-            <div style={{ position: "absolute", top: 0, right: 0, padding: 20, opacity: 0.08 }}><Icon name="mail" size={m?80:120} style={{ color: "#fff" }} /></div>
-            <div style={{ position: "relative", zIndex: 10 }}><h3 style={{ fontFamily: FONTS.headline, fontSize: m?18:22, fontWeight: 800, color: "#fff", marginBottom: 8 }}>Stay Informed</h3><p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 1.6, marginBottom: 20 }}>Join 5,000+ professionals receiving our weekly digest.</p></div>
-            <div style={{ position: "relative", zIndex: 10 }}>
-              <input type="email" placeholder="Email Address" style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "none", background: COLORS.primaryContainer, color: "#fff", fontSize: 13, marginBottom: 10, outline: "none" }} />
-              <button style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: COLORS.surface, color: COLORS.primary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Subscribe Now</button>
-            </div>
-          </article></FadeIn>}
+          {active === "All Updates" && <FadeIn delay={0.4}><NewsletterCTA compact /></FadeIn>}
         </div>
       </section>
     </>
