@@ -130,8 +130,8 @@ export default function AboutPage() {
             <h2 style={{ fontFamily: FONTS.headline, fontSize: m?26:40, fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 14 }}>Join the Vanguard of Sustainable Nigeria.</h2>
             <p style={{ fontSize: m?14:16, color: "rgba(255,255,255,0.85)", lineHeight: 1.7, marginBottom: 24 }}>Become a registered member and access professional networks, policy advocacy, and industry standards.</p>
             <div style={{ display: "flex", flexDirection: m?"column":"row", gap: 12 }}>
-              <button style={{ background: COLORS.surface, color: COLORS.primary, padding: "14px 28px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, cursor: "pointer" }}>Apply for Membership</button>
-              <button style={{ background: "transparent", border: "1.5px solid rgba(255,255,255,0.4)", color: "#fff", padding: "14px 28px", borderRadius: 12, fontFamily: FONTS.headline, fontWeight: 700, cursor: "pointer" }}>Download Brochure</button>
+              <button onClick={() => window.open("https://portal.recyclersassociation.org/", "_blank")} style={{ background: COLORS.surface, color: COLORS.primary, padding: "14px 28px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, cursor: "pointer" }}>Apply for Membership</button>
+              <a href="/RAN-Brochure.pdf" download style={{ background: "transparent", border: "1.5px solid rgba(255,255,255,0.4)", color: "#fff", padding: "14px 28px", borderRadius: 12, fontFamily: FONTS.headline, fontWeight: 700, cursor: "pointer", textDecoration: "none", textAlign: "center" }}>Download Brochure</a>
             </div>
           </div>
           {!m && <div style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", padding: 32, borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)", maxWidth: 300 }}>
