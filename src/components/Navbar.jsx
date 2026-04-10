@@ -22,8 +22,8 @@ export default function Navbar({ currentPage, setPage }) {
   return (
     <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, background: scrolled ? "rgba(250,250,249,0.94)" : "rgba(250,250,249,0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", transition: "all 0.3s", borderBottom: scrolled ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1400, margin: "0 auto", padding: isMobile ? "14px 20px" : "16px 32px" }}>
-        <div onClick={() => navigate("home")} style={{ cursor: "pointer", fontFamily: FONTS.headline, fontWeight: 800, fontSize: isMobile ? 14 : 16, color: "#14532d", textTransform: "uppercase", letterSpacing: "-0.5px" }}>
-          {isMobile ? "RAN" : "Recyclers Association of Nigeria"}
+        <div onClick={() => navigate("home")} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+          <img src="/logo.png" alt="Recyclers Association of Nigeria" style={{ height: isMobile ? 32 : 40, width: "auto" }} />
         </div>
         {!isMobile && (
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>

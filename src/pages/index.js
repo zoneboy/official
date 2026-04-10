@@ -6,4 +6,6 @@ export { default as ContactPage } from "./ContactPage";
 export { default as ArticlePage } from "./ArticlePage";
 export { default as MembershipGuidePage } from "./MembershipGuidePage";
 export { default as ResourcesPage } from "./ResourcesPage";
+export { default as PrivacyPolicyPage } from "./PrivacyPolicyPage";
+export { default as TermsOfServicePage } from "./TermsOfServicePage";
 export { default as AdminPage } from "./AdminPage";
