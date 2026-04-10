@@ -1,5 +1,5 @@
 // netlify/functions/cms-admin.js
-// PROTECTED CRUD endpoint — uses bcrypt-based token verification
+// PROTECTED CRUD endpoint — uses explicit queries per table (no dynamic table names)
 import { getDB, json, err, CORS } from "./db.js";
 
 async function verifyAuth(event) {
@@ -11,7 +11,6 @@ async function verifyAuth(event) {
     const username = parts[0];
     const hashPrefix = parts[1];
     const timestamp = parseInt(parts[2]);
-    // Token expires after 8 hours
     if (Date.now() - timestamp > 8 * 60 * 60 * 1000) return null;
     const sql = getDB();
     const rows = await sql`SELECT id FROM admin_users WHERE username=${username}`;
@@ -31,6 +30,7 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body);
     const { action, table, item, id, items } = body;
 
+    // ── UPSERT ──
     if (action === "upsert") {
       const iid = item.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
       switch (table) {
@@ -54,19 +54,55 @@ export const handler = async (event) => {
       return json({ success: true, id: iid });
     }
 
+    // ── DELETE — explicit query per table ──
     if (action === "delete") {
       if (!id) return err("ID required", 400);
-      const tbl = { leaders:"leaders", regional:"regional_coordinators", state:"state_coordinators", events:"events", articles:"articles" }[table];
-      if (!tbl) return err(`Unknown table: ${table}`, 400);
-      await sql`DELETE FROM ${sql(tbl)} WHERE id=${id}`;
+      switch (table) {
+        case "leaders":
+          await sql`DELETE FROM leaders WHERE id = ${id}`;
+          break;
+        case "regional":
+          await sql`DELETE FROM regional_coordinators WHERE id = ${id}`;
+          break;
+        case "state":
+          await sql`DELETE FROM state_coordinators WHERE id = ${id}`;
+          break;
+        case "events":
+          await sql`DELETE FROM events WHERE id = ${id}`;
+          break;
+        case "articles":
+          await sql`DELETE FROM articles WHERE id = ${id}`;
+          break;
+        default:
+          return err(`Unknown table: ${table}`, 400);
+      }
       return json({ success: true, deleted: id });
     }
 
+    // ── REORDER — explicit query per table ──
     if (action === "reorder") {
       if (!items) return err("Items array required", 400);
-      const tbl = { leaders:"leaders", regional:"regional_coordinators", state:"state_coordinators", events:"events", articles:"articles" }[table];
-      if (!tbl) return err(`Unknown table: ${table}`, 400);
-      for (const it of items) { await sql`UPDATE ${sql(tbl)} SET sort_order=${it.sort_order},updated_at=NOW() WHERE id=${it.id}`; }
+      for (const it of items) {
+        switch (table) {
+          case "leaders":
+            await sql`UPDATE leaders SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          case "regional":
+            await sql`UPDATE regional_coordinators SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          case "state":
+            await sql`UPDATE state_coordinators SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          case "events":
+            await sql`UPDATE events SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          case "articles":
+            await sql`UPDATE articles SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          default:
+            return err(`Unknown table: ${table}`, 400);
+        }
+      }
       return json({ success: true, reordered: items.length });
     }
 
