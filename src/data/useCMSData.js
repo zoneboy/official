@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, createElement } from "react";
 import { COLORS } from "../styles/tokens";
 
-const FALLBACK = { boardOfTrustees: [], leaders: [], regional: [], stateCoords: [], events: [], articles: [] };
+const FALLBACK = { boardOfTrustees: [], leaders: [], regional: [], stateCoords: [], events: [], articles: [], resources: [] };
 const CMSContext = createContext({ ...FALLBACK, loading: true, error: null });
 
 const TAG_COLORS = {
@@ -84,6 +84,18 @@ function xArticle(r, i) {
   };
 }
 
+function xResource(r) {
+  var d = r.publish_date ? new Date(r.publish_date) : null;
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    fileUrl: r.file_url || "",
+    category: r.category || "General",
+    date: d ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" }) : "",
+  };
+}
+
 export function CMSProvider(props) {
   var children = props.children;
   var _d = useState(FALLBACK), data = _d[0], setData = _d[1];
@@ -106,6 +118,7 @@ export function CMSProvider(props) {
             stateCoords: (raw.stateCoords || []).map(xState),
             events: (raw.events || []).map(xEvent),
             articles: (raw.articles || []).map(xArticle),
+            resources: (raw.resources || []).map(xResource),
           });
           setLoading(false);
         }
@@ -127,6 +140,7 @@ export function CMSProvider(props) {
     stateCoords: data.stateCoords,
     events: data.events,
     articles: data.articles,
+    resources: data.resources,
     loading: loading,
     error: error,
   };

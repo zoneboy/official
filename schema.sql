@@ -39,6 +39,13 @@ CREATE TABLE IF NOT EXISTS articles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS resources (
+  id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
+  file_url TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT 'General',
+  publish_date DATE, sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Admin users table with bcrypt hash + TOTP secret
 CREATE TABLE IF NOT EXISTS admin_users (
   id SERIAL PRIMARY KEY,
@@ -90,6 +97,10 @@ INSERT INTO state_coordinators (id,name,state,sort_order) VALUES
   ('s28','Segun Adewale','Ondo State',28),('s29','Wale Adeleke','Osun State',29),('s30','Abiola Ojo','Oyo State',30),
   ('s31','Gideon Daling','Plateau State',31),('s32','Tamuno George','Rivers State',32),('s33','Aliyu Shehu','Sokoto State',33),
   ('s34','Danladi Ishaya','Taraba State',34),('s35','Ibrahim Bukar','Yobe State',35),('s36','Abdulaziz Kabir','Zamfara State',36)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO resources (id,title,description,file_url,category,publish_date,sort_order) VALUES
+  ('res-1','2025 Mid-Year Newsletter','A comprehensive look at RAN activities and achievements in the first half of 2025.','/resources/RAN-2025-Mid-Year-Newsletter.pdf','Newsletter','2025-07-01',1)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO events (id,title,tag,description,event_date,event_time,location,loc_type,link,sort_order) VALUES

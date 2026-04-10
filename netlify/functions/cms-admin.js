@@ -52,6 +52,9 @@ export const handler = async (event) => {
         case "articles":
           await sql`INSERT INTO articles(id,title,tag,description,publish_date,image,author,phone,company,content,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.tag||'Insights'},${item.description||''},${item.publish_date||null},${item.image||''},${item.author||''},${item.phone||''},${item.company||''},${item.content||''},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,tag=EXCLUDED.tag,description=EXCLUDED.description,publish_date=EXCLUDED.publish_date,image=EXCLUDED.image,author=EXCLUDED.author,phone=EXCLUDED.phone,company=EXCLUDED.company,content=EXCLUDED.content,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
+        case "resources":
+          await sql`INSERT INTO resources(id,title,description,file_url,category,publish_date,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.file_url||''},${item.category||'General'},${item.publish_date||null},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,file_url=EXCLUDED.file_url,category=EXCLUDED.category,publish_date=EXCLUDED.publish_date,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
+          break;
         default: return err(`Unknown table: ${table}`, 400);
       }
       return json({ success: true, id: iid });
@@ -78,6 +81,9 @@ export const handler = async (event) => {
           break;
         case "articles":
           await sql`DELETE FROM articles WHERE id = ${id}`;
+          break;
+        case "resources":
+          await sql`DELETE FROM resources WHERE id = ${id}`;
           break;
         default:
           return err(`Unknown table: ${table}`, 400);
@@ -107,6 +113,9 @@ export const handler = async (event) => {
             break;
           case "articles":
             await sql`UPDATE articles SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          case "resources":
+            await sql`UPDATE resources SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
             break;
           default:
             return err(`Unknown table: ${table}`, 400);

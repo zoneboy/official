@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { COLORS, FONTS } from "./styles/tokens";
 import { Navbar, Footer } from "./components";
-import { HomePage, AboutPage, EventsPage, BlogPage, ContactPage, ArticlePage, MembershipGuidePage, AdminPage } from "./pages";
+import { HomePage, AboutPage, EventsPage, BlogPage, ContactPage, ArticlePage, MembershipGuidePage, ResourcesPage, AdminPage } from "./pages";
 import { CMSProvider } from "./data/useCMSData";
 
 export default function App() {
@@ -25,6 +25,7 @@ export default function App() {
       case "article":    return <ArticlePage setPage={setPage} article={currentArticle} />;
       case "contact":    return <ContactPage />;
       case "membership": return <MembershipGuidePage />;
+      case "resources":  return <ResourcesPage />;
       default:           return <HomePage setPage={setPage} setCurrentArticle={setCurrentArticle} />;
     }
   };
