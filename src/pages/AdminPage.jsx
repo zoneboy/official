@@ -1,18 +1,319 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const S = { bg:"#0a0f0a", card:"#111611", border:"#1e2a1e", accent:"#22c55e", accentDk:"#15803d", text:"#e8f5e9", dim:"#6b8a6b", dimmer:"#4a6b4a", hover:"#1a261a", danger:"#f87171", dangerBg:"#261a1a", dangerBd:"#3a2a2a" };
 
 const FIELD_DEFS = {
-  boardOfTrustees: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
-  leaders: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"dept",label:"Department",type:"text"},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
-  regional: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"region",label:"Region",type:"select",options:["South-South","North-Central","North-East","South-East","South-West","North-West"]},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
-  state: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"state",label:"State",type:"text",required:true},{key:"image",label:"Photo URL",type:"text",ph:"/team/name.jpg"} ],
-  events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Banner URL",type:"text"},{key:"link",label:"Registration Link",type:"text"} ],
-  articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image URL",type:"text"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"longtext",ph:"Each paragraph on a new line. Bullets start with •"} ],
-  resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File URL / Path",type:"text",required:true,ph:"/resources/filename.pdf"},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
+  boardOfTrustees: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"image",label:"Photo",type:"image"} ],
+  leaders: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"dept",label:"Department",type:"text"},{key:"image",label:"Photo",type:"image"} ],
+  regional: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"region",label:"Region",type:"select",options:["South-South","North-Central","North-East","South-East","South-West","North-West"]},{key:"image",label:"Photo",type:"image"} ],
+  state: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"state",label:"State",type:"text",required:true},{key:"image",label:"Photo",type:"image"} ],
+  events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
+  articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"longtext",ph:"Each paragraph on a new line. Bullets start with •"} ],
+  resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
 };
 const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)} };
+
+// ── File Upload Component ──
+function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState("");
+
+  const isImage = fieldType === "image";
+  const acceptStr = isImage
+    ? "image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+    : "application/pdf";
+  const acceptLabel = isImage ? "JPG, PNG, GIF, WebP, SVG" : "PDF";
+  const maxSizeMB = 7;
+
+  const uploadFile = async (file) => {
+    setError("");
+
+    // Validate type
+    const allowed = isImage
+      ? ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
+      : ["application/pdf"];
+    if (!allowed.includes(file.type)) {
+      setError(`Invalid file type. Accepted: ${acceptLabel}`);
+      return;
+    }
+
+    // Validate size
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      setError(`File too large. Maximum ${maxSizeMB}MB.`);
+      return;
+    }
+
+    setUploading(true);
+    setProgress(10);
+
+    try {
+      // Convert to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          // Extract just the base64 part (after "data:...;base64,")
+          const base64Data = result.split(",")[1];
+          resolve(base64Data);
+        };
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      setProgress(40);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          content_type: file.type,
+          data: base64,
+        }),
+      });
+
+      setProgress(80);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      setProgress(100);
+      onChange(data.url);
+
+      setTimeout(() => {
+        setUploading(false);
+        setProgress(0);
+      }, 500);
+    } catch (e) {
+      setError(e.message || "Upload failed. Please try again.");
+      setUploading(false);
+      setProgress(0);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) uploadFile(file);
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleRemove = () => {
+    onChange("");
+    setError("");
+  };
+
+  // Check if current value is an uploaded file URL or external URL
+  const hasFile = value && value.trim() !== "";
+  const isUploadedFile = hasFile && value.startsWith("/api/file/");
+  const isPdfFile = fieldType === "file";
+
+  return (
+    <div>
+      {/* Current file preview */}
+      {hasFile && !uploading && (
+        <div style={{
+          marginBottom: 12,
+          background: S.bg,
+          border: `1px solid ${S.border}`,
+          borderRadius: 10,
+          padding: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          {isImage && (
+            <div style={{
+              width: 64, height: 64, borderRadius: 8, overflow: "hidden",
+              background: S.hover, flexShrink: 0, border: `1px solid ${S.border}`,
+            }}>
+              <img
+                src={value}
+                alt="Preview"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            </div>
+          )}
+          {isPdfFile && (
+            <div style={{
+              width: 48, height: 48, borderRadius: 8, background: "#1a1a2e",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, border: `1px solid ${S.border}`,
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 900, color: "#f87171" }}>PDF</span>
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontSize: 12, fontWeight: 600, color: S.text,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {isUploadedFile ? "Uploaded file" : value}
+            </p>
+            <p style={{ fontSize: 10, color: S.dimmer, marginTop: 2 }}>
+              {isUploadedFile ? value : "External URL"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleRemove}
+            style={{
+              padding: "6px 12px", borderRadius: 6, background: S.dangerBg,
+              border: `1px solid ${S.dangerBd}`, color: S.danger,
+              fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+            }}
+          >Remove</button>
+        </div>
+      )}
+
+      {/* Upload zone */}
+      {!hasFile && !uploading && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => fileRef.current?.click()}
+          style={{
+            border: `2px dashed ${dragOver ? S.accent : S.border}`,
+            borderRadius: 12,
+            padding: "24px 16px",
+            textAlign: "center",
+            cursor: "pointer",
+            background: dragOver ? `${S.accent}08` : S.bg,
+            transition: "all 0.2s",
+          }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: "50%",
+            background: `${S.accent}15`, display: "flex",
+            alignItems: "center", justifyContent: "center",
+            margin: "0 auto 10px",
+          }}>
+            <span style={{ fontSize: 20 }}>{isImage ? "🖼️" : "📄"}</span>
+          </div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>
+            {dragOver ? "Drop to upload" : `Click or drag to upload ${isImage ? "image" : "PDF"}`}
+          </p>
+          <p style={{ fontSize: 11, color: S.dimmer }}>
+            {acceptLabel} • Max {maxSizeMB}MB
+          </p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept={acceptStr}
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
+          />
+        </div>
+      )}
+
+      {/* Replace with URL option */}
+      {!hasFile && !uploading && (
+        <UrlFallback onChange={onChange} isImage={isImage} />
+      )}
+
+      {/* Upload progress */}
+      {uploading && (
+        <div style={{
+          border: `1px solid ${S.accent}40`,
+          borderRadius: 12, padding: "20px 16px",
+          background: `${S.accent}06`, textAlign: "center",
+        }}>
+          <div style={{
+            width: "100%", height: 6, background: S.border,
+            borderRadius: 3, overflow: "hidden", marginBottom: 12,
+          }}>
+            <div style={{
+              width: `${progress}%`, height: "100%",
+              background: `linear-gradient(90deg, ${S.accentDk}, ${S.accent})`,
+              borderRadius: 3, transition: "width 0.3s ease",
+            }} />
+          </div>
+          <p style={{ fontSize: 12, color: S.accent, fontWeight: 600 }}>
+            {progress < 40 ? "Reading file..." : progress < 80 ? "Uploading..." : "Almost done..."}
+          </p>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <p style={{ color: S.danger, fontSize: 11, fontWeight: 600, marginTop: 8 }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Small URL fallback for pasting external URLs ──
+function UrlFallback({ onChange, isImage }) {
+  const [showUrl, setShowUrl] = useState(false);
+  const [urlVal, setUrlVal] = useState("");
+
+  if (!showUrl) {
+    return (
+      <button
+        type="button"
+        onClick={() => setShowUrl(true)}
+        style={{
+          background: "none", border: "none", color: S.dimmer,
+          fontSize: 11, cursor: "pointer", marginTop: 8,
+          textDecoration: "underline", padding: 0,
+        }}
+      >
+        Or paste a URL instead
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+      <input
+        value={urlVal}
+        onChange={(e) => setUrlVal(e.target.value)}
+        placeholder={isImage ? "https://example.com/photo.jpg" : "/resources/file.pdf"}
+        style={{
+          flex: 1, padding: "9px 12px", borderRadius: 8,
+          border: `1px solid ${S.border}`, background: S.bg,
+          color: S.text, fontSize: 12, outline: "none",
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => { if (urlVal.trim()) { onChange(urlVal.trim()); setUrlVal(""); setShowUrl(false); } }}
+        style={{
+          padding: "9px 14px", borderRadius: 8,
+          background: S.hover, border: `1px solid #2a3a2a`,
+          color: "#a3d9a3", fontSize: 11, fontWeight: 600, cursor: "pointer",
+        }}
+      >Use</button>
+      <button
+        type="button"
+        onClick={() => { setShowUrl(false); setUrlVal(""); }}
+        style={{
+          padding: "9px 10px", borderRadius: 8,
+          background: "none", border: `1px solid ${S.border}`,
+          color: S.dimmer, fontSize: 11, cursor: "pointer",
+        }}
+      >✕</button>
+    </div>
+  );
+}
 
 export default function AdminPage({ setPage: setAppPage }) {
   // Auth state
@@ -161,7 +462,9 @@ export default function AdminPage({ setPage: setAppPage }) {
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {items.map((item,idx) => (
           <div key={item.id} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:40,height:40,borderRadius:10,background:item.image?`url(${item.image}) center/cover`:S.hover,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1px solid ${S.border}`,fontSize:15,fontWeight:800,color:S.dimmer}}>{!item.image&&(cols[0](item)||"?").charAt(0).toUpperCase()}</div>
+            <div style={{width:40,height:40,borderRadius:10,background:item.image?`url(${item.image}) center/cover`:S.hover,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1px solid ${S.border}`,fontSize:15,fontWeight:800,color:S.dimmer,overflow:"hidden"}}>
+              {item.image ? <img src={item.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}} /> : (cols[0](item)||"?").charAt(0).toUpperCase()}
+            </div>
             <div style={{flex:1,minWidth:0}}><p style={{fontSize:14,fontWeight:700,color:S.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cols[0](item)}</p><p style={{fontSize:11,color:S.dim,marginTop:1}}>{cols[1](item)}</p></div>
             <div style={{display:"flex",flexDirection:"column",gap:1}}><button onClick={()=>handleMove(type,idx,-1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12,padding:"1px 5px"}}>▲</button><button onClick={()=>handleMove(type,idx,1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12,padding:"1px 5px"}}>▼</button></div>
             <button onClick={()=>{setEditItem({...item});setEditType(type);}} style={{padding:"7px 14px",borderRadius:8,background:S.hover,border:"1px solid #2a3a2a",color:"#a3d9a3",fontSize:11,fontWeight:600,cursor:"pointer"}}>Edit</button>
@@ -269,16 +572,55 @@ export default function AdminPage({ setPage: setAppPage }) {
     const isNew=!(data[editType]||[]).find(x=>x.id===editItem.id);
     return (
       <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",padding:20}} onClick={()=>{setEditItem(null);setEditType(null);}}>
-        <div onClick={e=>e.stopPropagation()} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:18,width:540,maxWidth:"100%",maxHeight:"85vh",overflow:"auto",padding:"28px 24px",boxShadow:"0 40px 80px rgba(0,0,0,0.5)"}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:18,width:580,maxWidth:"100%",maxHeight:"85vh",overflow:"auto",padding:"28px 24px",boxShadow:"0 40px 80px rgba(0,0,0,0.5)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:800,color:S.text}}>{isNew?"Add":"Edit"}</h3><button onClick={()=>{setEditItem(null);setEditType(null);}} style={{background:"none",border:"none",color:S.dim,fontSize:20,cursor:"pointer"}}>✕</button></div>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
-            {fields.map(f=><div key={f.key}>
-              <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}{f.required&&<span style={{color:S.accent}}> *</span>}</label>
-              {f.type==="select"?<select value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none"}}>{f.options.map(o=><option key={o} value={o}>{o}</option>)}</select>
-              :f.type==="textarea"?<textarea value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} rows={3} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit"}}/>
-              :f.type==="longtext"?<textarea value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} rows={10} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.7}}/>
-              :<input type={f.type} value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none"}}/>}
-            </div>)}
+            {fields.map(f => {
+              // ── Image upload field ──
+              if (f.type === "image") {
+                return (
+                  <div key={f.key}>
+                    <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>
+                      {f.label}
+                    </label>
+                    <FileUploadField
+                      value={editItem[f.key] || ""}
+                      onChange={(val) => setEditItem({...editItem, [f.key]: val})}
+                      token={token}
+                      fieldType="image"
+                    />
+                  </div>
+                );
+              }
+
+              // ── File (PDF) upload field ──
+              if (f.type === "file") {
+                return (
+                  <div key={f.key}>
+                    <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>
+                      {f.label}{f.required && <span style={{color:S.accent}}> *</span>}
+                    </label>
+                    <FileUploadField
+                      value={editItem[f.key] || ""}
+                      onChange={(val) => setEditItem({...editItem, [f.key]: val})}
+                      token={token}
+                      fieldType="file"
+                    />
+                  </div>
+                );
+              }
+
+              // ── All other field types (unchanged) ──
+              return (
+                <div key={f.key}>
+                  <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}{f.required&&<span style={{color:S.accent}}> *</span>}</label>
+                  {f.type==="select"?<select value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none"}}>{f.options.map(o=><option key={o} value={o}>{o}</option>)}</select>
+                  :f.type==="textarea"?<textarea value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} rows={3} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit"}}/>
+                  :f.type==="longtext"?<textarea value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} rows={10} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.7}}/>
+                  :<input type={f.type} value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none"}}/>}
+                </div>
+              );
+            })}
           </div>
           <div style={{display:"flex",gap:10,marginTop:24}}>
             <button onClick={()=>handleSave(editType,editItem)} style={{flex:1,padding:"13px",borderRadius:12,background:`linear-gradient(135deg,${S.accentDk},${S.accent})`,color:"#fff",border:"none",fontSize:14,fontWeight:700,cursor:"pointer"}}>{isNew?"Add":"Save"}</button>
