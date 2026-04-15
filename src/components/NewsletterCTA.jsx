@@ -77,7 +77,7 @@ export default function NewsletterCTA({ compact }) {
             <div style={{ position: "absolute", right: -40, top: -40, opacity: 0.08 }}><Icon name="recycling" size={isMobile ? 160 : 280} style={{ color: "#fff" }} /></div>
             <div style={{ position: "relative", zIndex: 10, maxWidth: 560 }}>
               <h2 style={{ fontFamily: FONTS.headline, fontSize: isMobile ? 24 : 36, fontWeight: 800, color: "#fff", marginBottom: 14 }}>Stay informed about the circular economy</h2>
-              <p style={{ color: COLORS.primaryFixedDim, fontSize: isMobile ? 14 : 17, marginBottom: 28, lineHeight: 1.6 }}>Subscribe to our monthly briefing for policy updates, industry news, and funding opportunities.</p>
+              <p style={{ color: COLORS.primaryFixedDim, fontSize: isMobile ? 14 : 17, marginBottom: 28, lineHeight: 1.6 }}>Subscribe to our monthly newsletter for policy updates, industry news, and funding opportunities.</p>
               {status === "success" ? (
                 <div style={{ background: "rgba(255,255,255,0.1)", padding: "16px 24px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.25)", display: "inline-flex", alignItems: "center", gap: 14 }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.primary, flexShrink: 0 }}><Icon name="check" size={20} /></div>
