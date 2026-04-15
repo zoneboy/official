@@ -35,8 +35,19 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* About RAN Description */}
+      <section style={{ padding: m ? "48px 20px" : "80px 32px", maxWidth: 1200, margin: "0 auto" }}>
+        <FadeIn>
+          <div style={{ background: COLORS.surfaceContainerLowest, borderRadius: 16, padding: m ? "32px 24px" : "56px 64px", border: `1px solid ${COLORS.outlineVariant}20`, boxShadow: "0 8px 32px rgba(0,0,0,0.03)" }}>
+            <p style={{ fontSize: m ? 15 : 18, color: COLORS.onSurfaceVariant, lineHeight: 1.9, maxWidth: 900 }}>
+              The Recyclers Association of Nigeria (RAN) is a non-profit organization committed to driving sustainable waste management and circular economy practices in Nigeria. Established in 2018 to unite key stakeholders across the recycling value chain, RAN works to formalize the sector, advocate for policy reform, and empower its members through capacity building and technical support. Headquartered in Lagos, Nigeria, RAN has active chapters in all 36 states and the Federal Capital Territory (FCT). The fiscal year of RAN runs from the 1st day of April and concludes on the 31st day of March of the following year.
+            </p>
+          </div>
+        </FadeIn>
+      </section>
+
       {/* Bento */}
-      <section style={{ padding: m ? "48px 20px" : "100px 32px", maxWidth: 1400, margin: "0 auto" }}>
+      <section style={{ padding: m ? "0 20px 48px" : "0 32px 100px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "7fr 5fr", gap: m ? 16 : 24, marginBottom: m ? 16 : 24 }}>
           <FadeIn><div style={{ background: COLORS.surfaceContainerLow, padding: m ? 28 : 48, borderRadius: 8 }}>
             <h2 style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 36, fontWeight: 700, color: COLORS.primary, marginBottom: 16 }}>Our Legacy</h2>

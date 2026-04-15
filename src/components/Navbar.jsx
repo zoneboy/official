@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { label: "Home", page: "home" },
   { label: "About Us", page: "about" },
   { label: "Events", page: "events" },
-  { label: "News", page: "blog" },
+  { label: "Blog", page: "blog" },
   { label: "Contact", page: "contact" },
 ];
 
