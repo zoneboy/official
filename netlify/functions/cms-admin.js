@@ -1,42 +1,12 @@
 // netlify/functions/cms-admin.js
 // PROTECTED CRUD endpoint — uses explicit queries per table (no dynamic table names)
 import { getDB, json, err, CORS } from "./db.js";
-
-async function verifyAuth(event) {
-  const h = event.headers.authorization || event.headers.Authorization;
-  if (!h || !h.startsWith("Bearer ")) return null;
-  try {
-    const decoded = Buffer.from(h.split(" ")[1], "base64").toString("utf-8");
-    const parts = decoded.split(":");
-    if (parts.length < 3) return null;
-
-    const username = parts[0];
-    const hashPrefix = parts[1];
-    const timestamp = parseInt(parts[2]);
-
-    // Reject invalid or stale timestamps (8-hour session window)
-    if (!Number.isFinite(timestamp)) return null;
-    if (Date.now() - timestamp > 8 * 60 * 60 * 1000) return null;
-
-    const sql = getDB();
-    const rows = await sql`SELECT id, password_hash FROM admin_users WHERE username = ${username}`;
-    if (rows.length === 0) return null;
-
-    // Verify the hash prefix matches the stored password hash.
-    // This is what proves the token was issued by a successful login
-    // (cms-auth.js signs tokens with the first 20 chars of the bcrypt hash).
-    // Without this check, anyone knowing a username could forge a token.
-    if (!rows[0].password_hash.startsWith(hashPrefix)) return null;
-
-    return username;
-  } catch {
-    return null;
-  }
-}
+import { verifyAuth } from "./auth-helper.js";
 
 export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
   if (event.httpMethod !== "POST") return err("Method Not Allowed", 405);
+
   const user = await verifyAuth(event);
   if (!user) return err("Unauthorized — please log in again", 401);
 

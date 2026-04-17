@@ -1,6 +1,8 @@
 // netlify/functions/cms-auth.js
-// POST /api/cms-auth — Authenticate with bcrypt password + TOTP 2FA
+// POST /api/cms-auth — Authenticate with bcrypt password + TOTP 2FA.
+// On success, issues a signed JWT that other admin endpoints verify.
 import { getDB, json, err, CORS } from "./db.js";
+import { signToken } from "./auth-helper.js";
 import bcrypt from "bcryptjs";
 import * as OTPAuth from "otpauth";
 
@@ -18,18 +20,16 @@ export const handler = async (event) => {
 
     const user = rows[0];
 
-    // ── Verify password with bcrypt ──
+    // ── Verify password ──
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     if (!passwordValid) return err("Invalid credentials", 401);
 
     // ── Check if 2FA is enabled ──
     if (user.totp_enabled) {
       if (!totp_code) {
-        // Password correct but TOTP required — tell the frontend
         return json({ success: false, requires_totp: true, message: "Enter your authenticator code" });
       }
 
-      // Verify TOTP code
       const totp = new OTPAuth.TOTP({
         issuer: "RAN Admin",
         label: user.username,
@@ -43,11 +43,16 @@ export const handler = async (event) => {
       if (delta === null) return err("Invalid authenticator code", 401);
     }
 
-    // ── Generate auth token ──
-    // Simple signed token: base64(username:bcrypt_hash_prefix:timestamp)
-    const timestamp = Date.now();
-    const tokenPayload = `${user.username}:${user.password_hash.slice(0, 20)}:${timestamp}`;
-    const token = Buffer.from(tokenPayload).toString("base64");
+    // ── Issue a signed JWT ──
+    // Signed with HS256 using process.env.JWT_SECRET.
+    // Expires in 8 hours. Tampering with any part of the token invalidates it.
+    let token;
+    try {
+      token = signToken(user.username);
+    } catch (e) {
+      console.error("cms-auth: JWT signing failed:", e.message);
+      return err("Server misconfigured — contact administrator", 500);
+    }
 
     return json({
       success: true,

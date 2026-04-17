@@ -1,24 +1,9 @@
 // netlify/functions/cms-setup-2fa.js
 // POST /api/cms-setup-2fa — Generate TOTP secret or enable/disable 2FA
 import { getDB, json, err, CORS } from "./db.js";
+import { verifyAuth } from "./auth-helper.js";
 import bcrypt from "bcryptjs";
 import * as OTPAuth from "otpauth";
-
-async function verifyAuth(event) {
-  const h = event.headers.authorization || event.headers.Authorization;
-  if (!h || !h.startsWith("Bearer ")) return null;
-  try {
-    const decoded = Buffer.from(h.split(" ")[1], "base64").toString("utf-8");
-    const parts = decoded.split(":");
-    const username = parts[0];
-    const hashPrefix = parts[1];
-    const sql = getDB();
-    const rows = await sql`SELECT id, username, password_hash, totp_secret, totp_enabled FROM admin_users WHERE username = ${username}`;
-    if (rows.length === 0) return null;
-    if (!rows[0].password_hash.startsWith(hashPrefix)) return null;
-    return rows[0];
-  } catch { return null; }
-}
 
 export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
@@ -50,7 +35,6 @@ export const handler = async (event) => {
         success: true,
         secret: secret.base32,
         uri: totp.toString(),
-        // The frontend will render a QR code from this URI
       });
     }
 
@@ -58,7 +42,6 @@ export const handler = async (event) => {
     if (action === "enable") {
       if (!totp_code) return err("Authenticator code required", 400);
 
-      // Fetch the latest secret
       const rows = await sql`SELECT totp_secret FROM admin_users WHERE id = ${user.id}`;
       const secret = rows[0].totp_secret;
       if (!secret) return err("Generate a secret first", 400);
