@@ -3,13 +3,13 @@ import DOMPurify from "dompurify";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
+import { useCMSData } from "../data/useCMSData";
 
 // ── Detect whether content is HTML (from the new WYSIWYG editor) or legacy plain text ──
 function isHtmlContent(content) {
   if (!content) return false;
   if (Array.isArray(content)) return false;
   if (typeof content !== "string") return false;
-  // Any HTML tag indicates the new format
   return /<(p|h[1-6]|ul|ol|li|blockquote|strong|em|a|img|br)\b/i.test(content);
 }
 
@@ -73,29 +73,96 @@ function RichContent({ html, isMobile }) {
   );
 }
 
+// ── Skeleton placeholder shown while CMS data loads ──
+function ArticleSkeleton({ isMobile: m }) {
+  const shimmer = {
+    background: `linear-gradient(90deg, ${COLORS.surfaceContainer} 0%, ${COLORS.surfaceContainerHigh} 50%, ${COLORS.surfaceContainer} 100%)`,
+    backgroundSize: "200% 100%",
+    animation: "ran-shimmer 1.4s ease-in-out infinite",
+    borderRadius: 6,
+  };
+
+  return (
+    <article style={{ paddingBottom: 80, background: COLORS.surface, minHeight: "100vh" }}>
+      {/* Hero placeholder */}
+      <div style={{ height: m ? 240 : 380, background: COLORS.surfaceContainer, position: "relative" }} aria-hidden="true" />
+
+      <div style={{ maxWidth: 840, margin: "0 auto", padding: m ? "32px 20px" : "48px 40px", marginTop: m ? -40 : -80, background: COLORS.surfaceContainerLowest, borderRadius: m ? 16 : 24, position: "relative", zIndex: 10, boxShadow: "0 12px 48px rgba(0,0,0,0.06)" }}>
+        {/* Tag + date row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ ...shimmer, width: 80, height: 24, borderRadius: 24 }} />
+          <div style={{ ...shimmer, width: 120, height: 14 }} />
+        </div>
+
+        {/* Title lines */}
+        <div style={{ ...shimmer, width: "95%", height: m ? 30 : 46, marginBottom: 12 }} />
+        <div style={{ ...shimmer, width: "75%", height: m ? 30 : 46, marginBottom: 28 }} />
+
+        {/* Accent bar placeholder */}
+        <div style={{ width: 80, height: 4, background: COLORS.outlineVariant, borderRadius: 2, marginBottom: 40 }} />
+
+        {/* Body paragraphs */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ ...shimmer, width: "100%", height: 14 }} />
+          <div style={{ ...shimmer, width: "96%", height: 14 }} />
+          <div style={{ ...shimmer, width: "90%", height: 14 }} />
+          <div style={{ ...shimmer, width: "94%", height: 14 }} />
+          <div style={{ ...shimmer, width: "60%", height: 14, marginBottom: 12 }} />
+          <div style={{ ...shimmer, width: "100%", height: 14 }} />
+          <div style={{ ...shimmer, width: "88%", height: 14 }} />
+          <div style={{ ...shimmer, width: "92%", height: 14 }} />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes ran-shimmer {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+    </article>
+  );
+}
+
+// ── Not-found state (only shown after data has loaded and article is truly missing) ──
+function NotFound({ setPage }) {
+  return (
+    <div style={{ padding: "100px 20px", textAlign: "center", minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 72, height: 72, borderRadius: "50%", background: `${COLORS.primary}10`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+        <Icon name="article" size={36} style={{ color: COLORS.primary }} />
+      </div>
+      <h2 style={{ fontFamily: FONTS.headline, fontSize: 28, fontWeight: 800, color: COLORS.onSurface, marginBottom: 10 }}>
+        Article not found
+      </h2>
+      <p style={{ color: COLORS.onSurfaceVariant, fontSize: 15, maxWidth: 420, lineHeight: 1.6, marginBottom: 28 }}>
+        This article may have been moved or removed. Browse our latest news and insights instead.
+      </p>
+      <button
+        onClick={() => setPage("blog")}
+        style={{ background: COLORS.primary, color: "#fff", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, display: "inline-flex", alignItems: "center", gap: 8 }}
+      >
+        <Icon name="arrow_back" size={18} /> Return to News
+      </button>
+    </div>
+  );
+}
+
 export default function ArticlePage({ setPage, article }) {
   const { isMobile: m } = useBreakpoints();
+  const { loading } = useCMSData();
 
-  if (!article) {
-    return (
-      <div style={{ padding: "100px 20px", textAlign: "center", minHeight: "60vh" }}>
-        <h2 style={{ fontFamily: FONTS.headline }}>Article not found</h2>
-        <button
-          onClick={() => setPage("blog")}
-          style={{ background: COLORS.primary, color: "#fff", padding: "12px 24px", borderRadius: 8, border: "none", marginTop: 20, cursor: "pointer", fontFamily: FONTS.headline, fontWeight: 700 }}
-        >
-          Return to News
-        </button>
-      </div>
-    );
+  // Decision tree:
+  //   1. Still loading and no article yet → skeleton (prevents the "not found" flash)
+  //   2. Loaded but no article resolved → 404 UI
+  //   3. Article found → render it
+  if (loading && !article) {
+    return <ArticleSkeleton isMobile={m} />;
   }
 
-  // The content can arrive in two shapes:
-  //   1. Array of paragraphs (legacy) — produced by useCMSData when content has no HTML tags
-  //   2. String of HTML — new WYSIWYG format
-  //
-  // We detect by looking at the raw content (array vs string). Since useCMSData
-  // currently always splits on "\n", we need to handle both gracefully.
+  if (!article) {
+    return <NotFound setPage={setPage} />;
+  }
+
   const rawContent = article.content;
   const contentAsString = Array.isArray(rawContent) ? rawContent.join("\n") : (rawContent || "");
   const useHtml = isHtmlContent(contentAsString);
@@ -216,7 +283,6 @@ export default function ArticlePage({ setPage, article }) {
         .ran-article-content li p { margin: 0; }
         .ran-article-content blockquote {
           border-left: 4px solid ${COLORS.secondary};
-          padding: 8px 0 8px 20px;
           margin: 24px 0;
           font-style: italic;
           color: ${COLORS.onSurface};

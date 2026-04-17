@@ -19,7 +19,8 @@ export default function HomePage({ setPage, setCurrentArticle }) {
   const m = isMobile;
   const cols = m ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
   const pad = m ? "0 20px" : "0 32px";
-  const nav = (p) => { setPage(p); window.scrollTo(0, 0); };
+  const nav = (p) => setPage(p);
+  const openArticle = (article) => setCurrentArticle(article);
 
   const { events: ALL_EVENTS, articles: ALL_ARTICLES } = useCMSData();
 
@@ -98,7 +99,7 @@ export default function HomePage({ setPage, setCurrentArticle }) {
                 </div>
                 <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 17 : 20, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>{a.title}</h3>
                 <p style={{ color: COLORS.onSurfaceVariant, lineHeight: 1.7, marginBottom: 12, fontSize: 14 }}>{a.desc}</p>
-                <a href="#" onClick={(e) => { e.preventDefault(); setCurrentArticle(a); setPage("article"); window.scrollTo(0,0); }} style={{ color: COLORS.secondary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Read Article</a>
+                <a href={`/blog/${a.id}`} onClick={(e) => { e.preventDefault(); openArticle(a); }} style={{ color: COLORS.secondary, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Read Article</a>
               </article></FadeIn>
             )) : <FadeIn><div style={{ gridColumn: "1 / -1", padding: "20px 0" }}><p style={{ color: COLORS.onSurfaceVariant, fontSize: 15 }}>No news updates available.</p></div></FadeIn>}
           </div>
