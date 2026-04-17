@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import RichTextEditor from "../components/RichTextEditor";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const S = { bg:"#0a0f0a", card:"#111611", border:"#1e2a1e", accent:"#22c55e", accentDk:"#15803d", text:"#e8f5e9", dim:"#6b8a6b", dimmer:"#4a6b4a", hover:"#1a261a", danger:"#f87171", dangerBg:"#261a1a", dangerBd:"#3a2a2a" };
@@ -9,12 +10,12 @@ const FIELD_DEFS = {
   regional: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"region",label:"Region",type:"select",options:["South-South","North-Central","North-East","South-East","South-West","North-West"]},{key:"image",label:"Photo",type:"image"} ],
   state: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"state",label:"State",type:"text",required:true},{key:"image",label:"Photo",type:"image"} ],
   events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
-  articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"longtext",ph:"Each paragraph on a new line. Bullets start with •"} ],
+  articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
   resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
 };
 const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)} };
 
-// ── File Upload Component ──
+// ── File Upload Component (unchanged from your version) ──
 function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -31,8 +32,6 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
 
   const uploadFile = async (file) => {
     setError("");
-
-    // Validate type
     const allowed = isImage
       ? ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
       : ["application/pdf"];
@@ -40,8 +39,6 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
       setError(`Invalid file type. Accepted: ${acceptLabel}`);
       return;
     }
-
-    // Validate size
     if (file.size > maxSizeMB * 1024 * 1024) {
       setError(`File too large. Maximum ${maxSizeMB}MB.`);
       return;
@@ -51,12 +48,10 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
     setProgress(10);
 
     try {
-      // Convert to base64
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
           const result = reader.result;
-          // Extract just the base64 part (after "data:...;base64,")
           const base64Data = result.split(",")[1];
           resolve(base64Data);
         };
@@ -108,7 +103,6 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) uploadFile(file);
-    // Reset input so same file can be re-selected
     e.target.value = "";
   };
 
@@ -117,14 +111,12 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
     setError("");
   };
 
-  // Check if current value is an uploaded file URL or external URL
   const hasFile = value && value.trim() !== "";
   const isUploadedFile = hasFile && value.startsWith("/api/file/");
   const isPdfFile = fieldType === "file";
 
   return (
     <div>
-      {/* Current file preview */}
       {hasFile && !uploading && (
         <div style={{
           marginBottom: 12,
@@ -181,7 +173,6 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
         </div>
       )}
 
-      {/* Upload zone */}
       {!hasFile && !uploading && (
         <div
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -222,12 +213,10 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
         </div>
       )}
 
-      {/* Replace with URL option */}
       {!hasFile && !uploading && (
         <UrlFallback onChange={onChange} isImage={isImage} />
       )}
 
-      {/* Upload progress */}
       {uploading && (
         <div style={{
           border: `1px solid ${S.accent}40`,
@@ -250,7 +239,6 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
         </div>
       )}
 
-      {/* Error message */}
       {error && (
         <p style={{ color: S.danger, fontSize: 11, fontWeight: 600, marginTop: 8 }}>
           {error}
@@ -260,7 +248,6 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
   );
 }
 
-// ── Small URL fallback for pasting external URLs ──
 function UrlFallback({ onChange, isImage }) {
   const [showUrl, setShowUrl] = useState(false);
   const [urlVal, setUrlVal] = useState("");
@@ -316,7 +303,6 @@ function UrlFallback({ onChange, isImage }) {
 }
 
 export default function AdminPage({ setPage: setAppPage }) {
-  // Auth state
   const [authed, setAuthed] = useState(false);
   const [token, setToken] = useState("");
   const [loginUser, setLoginUser] = useState("admin");
@@ -327,7 +313,6 @@ export default function AdminPage({ setPage: setAppPage }) {
   const [totpCode, setTotpCode] = useState("");
   const [totpEnabled, setTotpEnabled] = useState(false);
 
-  // 2FA setup state
   const [setupMode, setSetupMode] = useState(false);
   const [setupSecret, setSetupSecret] = useState("");
   const [setupUri, setSetupUri] = useState("");
@@ -335,7 +320,6 @@ export default function AdminPage({ setPage: setAppPage }) {
   const [setupMsg, setSetupMsg] = useState("");
   const [disablePass, setDisablePass] = useState("");
 
-  // CMS state
   const [section, setSection] = useState("dashboard");
   const [data, setData] = useState({ boardOfTrustees:[], leaders:[], regional:[], state:[], events:[], articles:[], resources:[] });
   const [loading, setLoading] = useState(true);
@@ -358,7 +342,6 @@ export default function AdminPage({ setPage: setAppPage }) {
 
   useEffect(()=>{ if(authed) fetchAll(); },[authed,fetchAll]);
 
-  // ── LOGIN ──
   const handleLogin = async (e) => {
     e.preventDefault(); setLoginLoading(true); setLoginErr("");
     try {
@@ -388,7 +371,6 @@ export default function AdminPage({ setPage: setAppPage }) {
   const handleDelete = (type,id) => { if(!confirm("Delete this item?")) return; api({action:"delete",table:type,id}); };
   const handleMove = (type,idx,dir) => { const list=[...(data[type]||[])]; const t=idx+dir; if(t<0||t>=list.length) return; [list[idx],list[t]]=[list[t],list[idx]]; api({action:"reorder",table:type,items:list.map((it,i)=>({id:it.id,sort_order:i+1}))}); };
 
-  // ── 2FA SETUP ──
   const generate2FA = async () => {
     setSetupMsg("");
     const res = await fetch("/api/cms-setup-2fa", { method:"POST", headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`}, body:JSON.stringify({action:"generate"}) });
@@ -411,7 +393,6 @@ export default function AdminPage({ setPage: setAppPage }) {
     else setSetupMsg(d.error||"Failed");
   };
 
-  // ── LOGIN SCREEN ──
   if (!authed) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:S.bg,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
       <div style={{position:"fixed",inset:0,opacity:0.04,backgroundImage:"radial-gradient(circle at 25% 25%,#22c55e 1px,transparent 1px),radial-gradient(circle at 75% 75%,#22c55e 1px,transparent 1px)",backgroundSize:"60px 60px"}}/>
@@ -493,7 +474,6 @@ export default function AdminPage({ setPage: setAppPage }) {
     </div>
   );
 
-  // ── SECURITY / 2FA SECTION ──
   const renderSecurity = () => (
     <div>
       <h2 style={{fontSize:26,fontWeight:800,color:S.text,marginBottom:6}}>Security Settings</h2>
@@ -570,13 +550,14 @@ export default function AdminPage({ setPage: setAppPage }) {
     if(!editItem||!editType) return null;
     const fields=FIELD_DEFS[editType]||[];
     const isNew=!(data[editType]||[]).find(x=>x.id===editItem.id);
+    // Articles get a wider modal since the rich text editor needs room
+    const modalWidth = editType === "articles" ? 840 : 580;
     return (
       <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",padding:20}} onClick={()=>{setEditItem(null);setEditType(null);}}>
-        <div onClick={e=>e.stopPropagation()} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:18,width:580,maxWidth:"100%",maxHeight:"85vh",overflow:"auto",padding:"28px 24px",boxShadow:"0 40px 80px rgba(0,0,0,0.5)"}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:18,width:modalWidth,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",padding:"28px 24px",boxShadow:"0 40px 80px rgba(0,0,0,0.5)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:800,color:S.text}}>{isNew?"Add":"Edit"}</h3><button onClick={()=>{setEditItem(null);setEditType(null);}} style={{background:"none",border:"none",color:S.dim,fontSize:20,cursor:"pointer"}}>✕</button></div>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
             {fields.map(f => {
-              // ── Image upload field ──
               if (f.type === "image") {
                 return (
                   <div key={f.key}>
@@ -593,7 +574,6 @@ export default function AdminPage({ setPage: setAppPage }) {
                 );
               }
 
-              // ── File (PDF) upload field ──
               if (f.type === "file") {
                 return (
                   <div key={f.key}>
@@ -610,13 +590,27 @@ export default function AdminPage({ setPage: setAppPage }) {
                 );
               }
 
-              // ── All other field types (unchanged) ──
+              if (f.type === "richtext") {
+                return (
+                  <div key={f.key}>
+                    <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>
+                      {f.label}{f.required && <span style={{color:S.accent}}> *</span>}
+                    </label>
+                    <RichTextEditor
+                      value={editItem[f.key] || ""}
+                      onChange={(val) => setEditItem({...editItem, [f.key]: val})}
+                      token={token}
+                      placeholder={f.ph || "Write content…"}
+                    />
+                  </div>
+                );
+              }
+
               return (
                 <div key={f.key}>
                   <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}{f.required&&<span style={{color:S.accent}}> *</span>}</label>
                   {f.type==="select"?<select value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none"}}>{f.options.map(o=><option key={o} value={o}>{o}</option>)}</select>
                   :f.type==="textarea"?<textarea value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} rows={3} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit"}}/>
-                  :f.type==="longtext"?<textarea value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} rows={10} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.7}}/>
                   :<input type={f.type} value={editItem[f.key]||""} onChange={e=>setEditItem({...editItem,[f.key]:e.target.value})} placeholder={f.ph||""} style={{width:"100%",padding:"11px 14px",borderRadius:10,border:`1px solid ${S.border}`,background:S.bg,color:S.text,fontSize:13,outline:"none"}}/>}
                 </div>
               );

@@ -27,6 +27,12 @@ function initials(name) {
   return name ? name.split(" ").map(function(w) { return w[0]; }).join("").slice(0, 2).toUpperCase() : "??";
 }
 
+// ── Detects whether content was saved as HTML (new WYSIWYG editor) or plain text (legacy) ──
+function isHtmlContent(content) {
+  if (!content || typeof content !== "string") return false;
+  return /<(p|h[1-6]|ul|ol|li|blockquote|strong|em|a|img|br)\b/i.test(content);
+}
+
 function xTrustee(r) {
   return { id: r.id, name: r.name, role: r.role, image: r.image || "", initials: initials(r.name) };
 }
@@ -67,6 +73,20 @@ function xEvent(r, i) {
 function xArticle(r, i) {
   var d = r.publish_date ? new Date(r.publish_date) : null;
   var c = TAG_COLORS[r.tag] || TAG_COLORS.Insights;
+
+  // Content handling:
+  //   - If HTML (from WYSIWYG), pass the raw string through. ArticlePage will detect & render.
+  //   - If plain text (legacy), split into paragraphs for the legacy renderer.
+  var rawContent = r.content || "";
+  var content;
+  if (isHtmlContent(rawContent)) {
+    content = rawContent;
+  } else {
+    content = rawContent
+      ? rawContent.split("\n").filter(function(p) { return p.trim(); })
+      : [];
+  }
+
   return {
     id: r.id,
     tag: r.tag,
@@ -80,7 +100,7 @@ function xArticle(r, i) {
     author: r.author,
     phone: r.phone,
     company: r.company,
-    content: r.content ? r.content.split("\n").filter(function(p) { return p.trim(); }) : [],
+    content: content,
   };
 }
 
@@ -145,7 +165,6 @@ export function CMSProvider(props) {
     error: error,
   };
 
-  // Using createElement instead of JSX so this file can stay as .js
   return createElement(CMSContext.Provider, { value: value }, children);
 }
 
