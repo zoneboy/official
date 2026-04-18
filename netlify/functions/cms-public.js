@@ -1,8 +1,10 @@
-import { getDB, json, err, CORS } from "./db.js";
+// netlify/functions/cms-public.js
+// GET /api/cms-public — Public read endpoint for website content.
+import { getDB, json, err, corsHeaders } from "./db.js";
 
 export const handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
-  if (event.httpMethod !== "GET") return err("Method Not Allowed", 405);
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: corsHeaders(event), body: "" };
+  if (event.httpMethod !== "GET") return err("Method Not Allowed", 405, event);
 
   try {
     const sql = getDB();
@@ -15,9 +17,9 @@ export const handler = async (event) => {
       sql`SELECT id,title,tag,description,publish_date,image,author,phone,company,content FROM articles ORDER BY sort_order ASC`,
       sql`SELECT id,title,description,file_url,category,publish_date FROM resources ORDER BY sort_order ASC`,
     ]);
-    return json({ boardOfTrustees, leaders, regional, stateCoords, events, articles, resources });
+    return json({ boardOfTrustees, leaders, regional, stateCoords, events, articles, resources }, 200, event);
   } catch (e) {
     console.error("cms-public:", e);
-    return err("Failed to fetch content");
+    return err("Failed to fetch content", 500, event);
   }
 };

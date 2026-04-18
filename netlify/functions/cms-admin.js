@@ -1,21 +1,26 @@
 // netlify/functions/cms-admin.js
-// PROTECTED CRUD endpoint — uses explicit queries per table (no dynamic table names)
-import { getDB, json, err, CORS } from "./db.js";
+// PROTECTED CRUD endpoint — JWT verified, same-origin enforced.
+import { getDB, json, err, corsHeaders, requireSameOrigin } from "./db.js";
 import { verifyAuth } from "./auth-helper.js";
 
 export const handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
-  if (event.httpMethod !== "POST") return err("Method Not Allowed", 405);
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: corsHeaders(event), body: "" };
+  if (event.httpMethod !== "POST") return err("Method Not Allowed", 405, event);
+
+  // CSRF defense: reject requests whose Origin/Referer isn't our domain.
+  // This runs BEFORE token verification so we don't leak "token valid" vs
+  // "token invalid" signals to cross-origin callers.
+  const originCheck = requireSameOrigin(event);
+  if (originCheck) return originCheck;
 
   const user = await verifyAuth(event);
-  if (!user) return err("Unauthorized — please log in again", 401);
+  if (!user) return err("Unauthorized — please log in again", 401, event);
 
   try {
     const sql = getDB();
     const body = JSON.parse(event.body);
     const { action, table, item, id, items } = body;
 
-    // ── UPSERT ──
     if (action === "upsert") {
       const iid = item.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
       switch (table) {
@@ -40,14 +45,13 @@ export const handler = async (event) => {
         case "resources":
           await sql`INSERT INTO resources(id,title,description,file_url,category,publish_date,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.file_url||''},${item.category||'General'},${item.publish_date||null},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,file_url=EXCLUDED.file_url,category=EXCLUDED.category,publish_date=EXCLUDED.publish_date,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
-        default: return err(`Unknown table: ${table}`, 400);
+        default: return err(`Unknown table: ${table}`, 400, event);
       }
-      return json({ success: true, id: iid });
+      return json({ success: true, id: iid }, 200, event);
     }
 
-    // ── DELETE — explicit query per table ──
     if (action === "delete") {
-      if (!id) return err("ID required", 400);
+      if (!id) return err("ID required", 400, event);
       switch (table) {
         case "boardOfTrustees":
           await sql`DELETE FROM board_of_trustees WHERE id = ${id}`;
@@ -71,14 +75,13 @@ export const handler = async (event) => {
           await sql`DELETE FROM resources WHERE id = ${id}`;
           break;
         default:
-          return err(`Unknown table: ${table}`, 400);
+          return err(`Unknown table: ${table}`, 400, event);
       }
-      return json({ success: true, deleted: id });
+      return json({ success: true, deleted: id }, 200, event);
     }
 
-    // ── REORDER — explicit query per table ──
     if (action === "reorder") {
-      if (!items) return err("Items array required", 400);
+      if (!items) return err("Items array required", 400, event);
       for (const it of items) {
         switch (table) {
           case "boardOfTrustees":
@@ -103,15 +106,15 @@ export const handler = async (event) => {
             await sql`UPDATE resources SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
             break;
           default:
-            return err(`Unknown table: ${table}`, 400);
+            return err(`Unknown table: ${table}`, 400, event);
         }
       }
-      return json({ success: true, reordered: items.length });
+      return json({ success: true, reordered: items.length }, 200, event);
     }
 
-    return err(`Unknown action: ${action}`, 400);
+    return err(`Unknown action: ${action}`, 400, event);
   } catch (e) {
     console.error("cms-admin:", e);
-    return err(e.message || "Server error");
+    return err("Server error", 500, event);
   }
 };
