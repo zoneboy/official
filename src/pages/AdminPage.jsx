@@ -11,17 +11,24 @@ const FIELD_DEFS = {
   state: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"state",label:"State",type:"text",required:true},{key:"image",label:"Photo",type:"image"} ],
   events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
   articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
-  resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
+  // Resources default to PUBLIC because they're meant to be downloadable by
+  // website visitors. Admin can toggle to private on upload if the file is
+  // sensitive (internal report, member list, etc.).
+  resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true,allowPrivate:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
 };
 const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)} };
 
-// ── File Upload Component (unchanged from your version) ──
-function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
+// ── File Upload Component ──
+function FileUploadField({ value, onChange, token, fieldType, allowPrivate = false }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
+  // "public" vs "private" selection — only relevant when allowPrivate is true.
+  // Public is the default: visitors need to download resources, images render
+  // on the public site, etc.
+  const [isPublic, setIsPublic] = useState(true);
 
   const isImage = fieldType === "image";
   const acceptStr = isImage
@@ -32,6 +39,7 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
 
   const uploadFile = async (file) => {
     setError("");
+
     const allowed = isImage
       ? ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
       : ["application/pdf"];
@@ -71,6 +79,7 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
           filename: file.name,
           content_type: file.type,
           data: base64,
+          public: isPublic,
         }),
       });
 
@@ -174,47 +183,104 @@ function FileUploadField({ value, onChange, accept, label, token, fieldType }) {
       )}
 
       {!hasFile && !uploading && (
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => fileRef.current?.click()}
-          style={{
-            border: `2px dashed ${dragOver ? S.accent : S.border}`,
-            borderRadius: 12,
-            padding: "24px 16px",
-            textAlign: "center",
-            cursor: "pointer",
-            background: dragOver ? `${S.accent}08` : S.bg,
-            transition: "all 0.2s",
-          }}
-        >
-          <div style={{
-            width: 44, height: 44, borderRadius: "50%",
-            background: `${S.accent}15`, display: "flex",
-            alignItems: "center", justifyContent: "center",
-            margin: "0 auto 10px",
-          }}>
-            <span style={{ fontSize: 20 }}>{isImage ? "🖼️" : "📄"}</span>
-          </div>
-          <p style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>
-            {dragOver ? "Drop to upload" : `Click or drag to upload ${isImage ? "image" : "PDF"}`}
-          </p>
-          <p style={{ fontSize: 11, color: S.dimmer }}>
-            {acceptLabel} • Max {maxSizeMB}MB
-          </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept={acceptStr}
-            onChange={handleFileSelect}
-            style={{ display: "none" }}
-          />
-        </div>
-      )}
+        <>
+          {/* Public / private toggle for PDF-style fields where privacy matters */}
+          {allowPrivate && (
+            <div style={{
+              marginBottom: 10,
+              background: S.bg,
+              border: `1px solid ${S.border}`,
+              borderRadius: 10,
+              padding: "10px 12px",
+              display: "flex",
+              gap: 6,
+            }}>
+              <button
+                type="button"
+                onClick={() => setIsPublic(true)}
+                style={{
+                  flex: 1,
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  border: `1px solid ${isPublic ? S.accent : "transparent"}`,
+                  background: isPublic ? `${S.accent}15` : "transparent",
+                  color: isPublic ? S.accent : S.dim,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                🌐 Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPublic(false)}
+                style={{
+                  flex: 1,
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  border: `1px solid ${!isPublic ? "#fbbf24" : "transparent"}`,
+                  background: !isPublic ? "#fbbf2415" : "transparent",
+                  color: !isPublic ? "#fbbf24" : S.dim,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                🔒 Private (admin-only)
+              </button>
+            </div>
+          )}
 
-      {!hasFile && !uploading && (
-        <UrlFallback onChange={onChange} isImage={isImage} />
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+            style={{
+              border: `2px dashed ${dragOver ? S.accent : S.border}`,
+              borderRadius: 12,
+              padding: "24px 16px",
+              textAlign: "center",
+              cursor: "pointer",
+              background: dragOver ? `${S.accent}08` : S.bg,
+              transition: "all 0.2s",
+            }}
+          >
+            <div style={{
+              width: 44, height: 44, borderRadius: "50%",
+              background: `${S.accent}15`, display: "flex",
+              alignItems: "center", justifyContent: "center",
+              margin: "0 auto 10px",
+            }}>
+              <span style={{ fontSize: 20 }}>{isImage ? "🖼️" : "📄"}</span>
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>
+              {dragOver ? "Drop to upload" : `Click or drag to upload ${isImage ? "image" : "PDF"}`}
+            </p>
+            <p style={{ fontSize: 11, color: S.dimmer }}>
+              {acceptLabel} • Max {maxSizeMB}MB
+              {allowPrivate && !isPublic && " • Admin-only"}
+            </p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept={acceptStr}
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          <UrlFallback onChange={onChange} isImage={isImage} />
+        </>
       )}
 
       {uploading && (
@@ -550,7 +616,6 @@ export default function AdminPage({ setPage: setAppPage }) {
     if(!editItem||!editType) return null;
     const fields=FIELD_DEFS[editType]||[];
     const isNew=!(data[editType]||[]).find(x=>x.id===editItem.id);
-    // Articles get a wider modal since the rich text editor needs room
     const modalWidth = editType === "articles" ? 840 : 580;
     return (
       <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",padding:20}} onClick={()=>{setEditItem(null);setEditType(null);}}>
@@ -585,6 +650,7 @@ export default function AdminPage({ setPage: setAppPage }) {
                       onChange={(val) => setEditItem({...editItem, [f.key]: val})}
                       token={token}
                       fieldType="file"
+                      allowPrivate={f.allowPrivate}
                     />
                   </div>
                 );
