@@ -1,12 +1,10 @@
 // netlify/functions/auth-helper.js
-// Shared JWT sign/verify logic for all admin endpoints.
-// Using a single source of truth prevents the kind of drift bug that caused
-// the earlier verifyAuth inconsistency between cms-admin.js and cms-setup-2fa.js.
+// Shared JWT sign/verify logic + expiry helpers for all admin endpoints.
 
 import jwt from "jsonwebtoken";
 import { getDB } from "./db.js";
 
-const TOKEN_TTL = "8h";
+const TOKEN_TTL_SECONDS = 8 * 60 * 60; // 8 hours
 const ISSUER = "ran-cms";
 
 function getSecret() {
@@ -17,24 +15,24 @@ function getSecret() {
   return secret;
 }
 
-// ── Sign a token after a successful login ──
-// Payload is intentionally minimal: just the username. The `iat` (issued at)
-// and `exp` (expiry) claims are added automatically by jwt.sign.
+// ── Sign a token after a successful login or refresh ──
+// Returns { token, expiresAt } — expiresAt is epoch milliseconds,
+// so the client can compute time-remaining and show a countdown.
 export function signToken(username) {
-  return jwt.sign(
+  const token = jwt.sign(
     { sub: username },
     getSecret(),
     {
-      expiresIn: TOKEN_TTL,
+      expiresIn: TOKEN_TTL_SECONDS,
       issuer: ISSUER,
       algorithm: "HS256",
     }
   );
+  const expiresAt = Date.now() + TOKEN_TTL_SECONDS * 1000;
+  return { token, expiresAt };
 }
 
 // ── Verify a token from the Authorization header ──
-// Returns the admin_users row if valid, or null otherwise.
-// Never throws — all errors become null (unauthorized).
 export async function verifyAuth(event) {
   const header = event.headers.authorization || event.headers.Authorization;
   if (!header || !header.startsWith("Bearer ")) return null;
@@ -49,15 +47,12 @@ export async function verifyAuth(event) {
       algorithms: ["HS256"],
     });
   } catch {
-    // Catches expired, malformed, bad signature, wrong issuer, wrong algorithm
     return null;
   }
 
   const username = payload.sub;
   if (!username || typeof username !== "string") return null;
 
-  // Verify the user still exists in the database.
-  // This means deleting an admin row immediately invalidates all their tokens.
   try {
     const sql = getDB();
     const rows = await sql`SELECT id, username, password_hash, totp_secret, totp_enabled FROM admin_users WHERE username = ${username}`;

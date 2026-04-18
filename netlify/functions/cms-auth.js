@@ -1,6 +1,7 @@
 // netlify/functions/cms-auth.js
 // POST /api/cms-auth — Authenticate with bcrypt password + TOTP 2FA.
-// On success, issues a signed JWT (see auth-helper.js).
+// On success, issues a signed JWT plus the expiry timestamp (epoch ms)
+// so the client can show a countdown.
 import { getDB, json, err, corsHeaders, requireSameOrigin } from "./db.js";
 import { signToken } from "./auth-helper.js";
 import { decrypt } from "./crypto-helper.js";
@@ -11,8 +12,6 @@ export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: corsHeaders(event), body: "" };
   if (event.httpMethod !== "POST") return err("Method Not Allowed", 405, event);
 
-  // Only accept login requests from our own domain. Without this, an attacker
-  // site could submit a password-guessing form against our auth endpoint.
   const originCheck = requireSameOrigin(event);
   if (originCheck) return originCheck;
 
@@ -59,9 +58,9 @@ export const handler = async (event) => {
       if (delta === null) return err("Invalid authenticator code", 401, event);
     }
 
-    let token;
+    let signed;
     try {
-      token = signToken(user.username);
+      signed = signToken(user.username);
     } catch (e) {
       console.error("cms-auth: JWT signing failed:", e.message);
       return err("Server misconfigured — contact administrator", 500, event);
@@ -69,7 +68,8 @@ export const handler = async (event) => {
 
     return json({
       success: true,
-      token,
+      token: signed.token,
+      expires_at: signed.expiresAt, // epoch ms — client shows countdown
       user: user.username,
       totp_enabled: user.totp_enabled,
     }, 200, event);
