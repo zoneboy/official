@@ -1,8 +1,11 @@
 // netlify/functions/cms-auth.js
 // POST /api/cms-auth — Authenticate with bcrypt password + TOTP 2FA.
-// On success, issues a signed JWT that other admin endpoints verify.
+// On success, issues a signed JWT (see auth-helper.js).
+// TOTP secrets are encrypted at rest (see crypto-helper.js) and decrypted
+// only in-memory to verify the submitted code.
 import { getDB, json, err, CORS } from "./db.js";
 import { signToken } from "./auth-helper.js";
+import { decrypt } from "./crypto-helper.js";
 import bcrypt from "bcryptjs";
 import * as OTPAuth from "otpauth";
 
@@ -24,10 +27,25 @@ export const handler = async (event) => {
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     if (!passwordValid) return err("Invalid credentials", 401);
 
-    // ── Check if 2FA is enabled ──
+    // ── Check 2FA ──
     if (user.totp_enabled) {
       if (!totp_code) {
         return json({ success: false, requires_totp: true, message: "Enter your authenticator code" });
+      }
+
+      // Decrypt the stored secret only in memory. The plaintext is never
+      // written to disk or logs. Legacy plaintext rows pass through decrypt()
+      // unchanged so existing admins keep working through the transition.
+      let plainSecret;
+      try {
+        plainSecret = decrypt(user.totp_secret);
+      } catch (e) {
+        console.error("cms-auth: TOTP decrypt failed:", e.message);
+        return err("Server misconfigured — contact administrator", 500);
+      }
+
+      if (!plainSecret) {
+        return err("2FA is enabled but no secret is stored. Contact administrator.", 500);
       }
 
       const totp = new OTPAuth.TOTP({
@@ -36,7 +54,7 @@ export const handler = async (event) => {
         algorithm: "SHA1",
         digits: 6,
         period: 30,
-        secret: OTPAuth.Secret.fromBase32(user.totp_secret),
+        secret: OTPAuth.Secret.fromBase32(plainSecret),
       });
 
       const delta = totp.validate({ token: totp_code, window: 1 });
@@ -44,8 +62,6 @@ export const handler = async (event) => {
     }
 
     // ── Issue a signed JWT ──
-    // Signed with HS256 using process.env.JWT_SECRET.
-    // Expires in 8 hours. Tampering with any part of the token invalidates it.
     let token;
     try {
       token = signToken(user.username);

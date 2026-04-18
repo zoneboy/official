@@ -1,7 +1,9 @@
 // netlify/functions/cms-setup-2fa.js
-// POST /api/cms-setup-2fa — Generate TOTP secret or enable/disable 2FA
+// POST /api/cms-setup-2fa — Generate TOTP secret or enable/disable 2FA.
+// TOTP secrets are encrypted at rest with AES-256-GCM (see crypto-helper.js).
 import { getDB, json, err, CORS } from "./db.js";
 import { verifyAuth } from "./auth-helper.js";
+import { encrypt, decrypt } from "./crypto-helper.js";
 import bcrypt from "bcryptjs";
 import * as OTPAuth from "otpauth";
 
@@ -28,9 +30,20 @@ export const handler = async (event) => {
         secret,
       });
 
-      // Store the secret temporarily (not enabled until verified)
-      await sql`UPDATE admin_users SET totp_secret = ${secret.base32} WHERE id = ${user.id}`;
+      // Encrypt before persisting. The plaintext base32 secret never touches the DB.
+      let encryptedSecret;
+      try {
+        encryptedSecret = encrypt(secret.base32);
+      } catch (e) {
+        console.error("cms-setup-2fa: encrypt failed:", e.message);
+        return err("Server misconfigured — contact administrator", 500);
+      }
 
+      await sql`UPDATE admin_users SET totp_secret = ${encryptedSecret} WHERE id = ${user.id}`;
+
+      // We return the plaintext secret + URI to the client ONCE, at setup time,
+      // so the user can scan the QR and/or save it manually. After this response,
+      // only the encrypted form exists on the server.
       return json({
         success: true,
         secret: secret.base32,
@@ -43,8 +56,17 @@ export const handler = async (event) => {
       if (!totp_code) return err("Authenticator code required", 400);
 
       const rows = await sql`SELECT totp_secret FROM admin_users WHERE id = ${user.id}`;
-      const secret = rows[0].totp_secret;
-      if (!secret) return err("Generate a secret first", 400);
+      const storedSecret = rows[0].totp_secret;
+      if (!storedSecret) return err("Generate a secret first", 400);
+
+      // Decrypt to use the secret; handles legacy plaintext rows transparently.
+      let plainSecret;
+      try {
+        plainSecret = decrypt(storedSecret);
+      } catch (e) {
+        console.error("cms-setup-2fa: decrypt failed:", e.message);
+        return err("Stored secret could not be read. Regenerate your 2FA setup.", 500);
+      }
 
       const totp = new OTPAuth.TOTP({
         issuer: "RAN Admin",
@@ -52,7 +74,7 @@ export const handler = async (event) => {
         algorithm: "SHA1",
         digits: 6,
         period: 30,
-        secret: OTPAuth.Secret.fromBase32(secret),
+        secret: OTPAuth.Secret.fromBase32(plainSecret),
       });
 
       const delta = totp.validate({ token: totp_code, window: 1 });
@@ -68,6 +90,7 @@ export const handler = async (event) => {
       const valid = await bcrypt.compare(password, user.password_hash);
       if (!valid) return err("Invalid password", 401);
 
+      // Clear both flag and secret; no plaintext remains.
       await sql`UPDATE admin_users SET totp_enabled = FALSE, totp_secret = '' WHERE id = ${user.id}`;
       return json({ success: true, message: "2FA disabled" });
     }
