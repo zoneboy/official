@@ -126,14 +126,12 @@ By understanding these dynamics, Nigerian recyclers can continue to transform wa
 ON CONFLICT (id) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════
--- DEFAULT ADMIN USER
--- Password: ran2026admin  (bcrypt hash with 12 rounds)
--- TOTP not enabled yet — admin sets it up on first login
+-- 
 -- ═══════════════════════════════════════════════════════
 INSERT INTO admin_users (username, password_hash, totp_secret, totp_enabled) VALUES
   ('admin', '$2a$12$LJ3m4ys4Rz0hXqOTQhQJyeKZ7F3Nm5l6X5AxjKqap8DhT3.hSMkW.', '', FALSE)
 ON CONFLICT (username) DO NOTHING;
 
--- NOTE: The hash above is for password "ran2026admin".
+-- N
 -- To change it, run:  node scripts/hash-password.js YourNewPassword
 -- Then update with:   UPDATE admin_users SET password_hash = '<new_hash>' WHERE username = 'admin';
