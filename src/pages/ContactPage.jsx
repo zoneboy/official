@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { COLORS, FONTS, GRADIENTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
@@ -17,26 +17,76 @@ const BENEFITS = [
   { title: "Innovations & Funding", desc: "Updates on best practices, innovations, industry trends and funding opportunities." },
 ];
 
+// Fetch a fresh signed challenge from the server.
+async function fetchChallenge() {
+  const res = await fetch("/api/captcha");
+  if (!res.ok) throw new Error("Could not load verification challenge");
+  return res.json(); // { question, token }
+}
+
 export default function ContactPage() {
   const { isMobile: m } = useBreakpoints();
   const [formData, setFormData] = useState({ name: "", org: "", email: "", message: "" });
   const [status, setStatus] = useState("idle");
-  const [captcha, setCaptcha] = useState({ num1: 0, num2: 0 });
+  const [challenge, setChallenge] = useState(null); // { question, token } | null
   const [userAnswer, setUserAnswer] = useState("");
   const [captchaError, setCaptchaError] = useState(false);
-  const generateCaptcha = () => { setCaptcha({ num1: Math.floor(Math.random()*10)+1, num2: Math.floor(Math.random()*10)+1 }); setUserAnswer(""); setCaptchaError(false); };
-  useEffect(() => { generateCaptcha(); }, []);
+  const [loadingChallenge, setLoadingChallenge] = useState(false);
+
+  const loadNewChallenge = useCallback(async () => {
+    setLoadingChallenge(true);
+    setUserAnswer("");
+    setCaptchaError(false);
+    try {
+      const c = await fetchChallenge();
+      setChallenge(c);
+    } catch {
+      setChallenge(null);
+    } finally {
+      setLoadingChallenge(false);
+    }
+  }, []);
+
+  useEffect(() => { loadNewChallenge(); }, [loadNewChallenge]);
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (parseInt(userAnswer) !== captcha.num1 + captcha.num2) { setCaptchaError(true); return; }
-    setStatus("loading"); setCaptchaError(false);
+    if (!challenge) { setCaptchaError(true); return; }
+    if (!userAnswer) { setCaptchaError(true); return; }
+
+    setStatus("loading");
+    setCaptchaError(false);
     try {
-      const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
-      if (!response.ok) throw new Error("Failed");
-      setStatus("success"); setFormData({ name: "", org: "", email: "", message: "" }); generateCaptcha();
-    } catch (error) { console.error(error); setStatus("idle"); alert("We encountered an issue. Please try again or use the direct email."); }
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          captcha_token: challenge.token,
+          captcha_answer: parseInt(userAnswer, 10),
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
+      setStatus("success");
+      setFormData({ name: "", org: "", email: "", message: "" });
+      await loadNewChallenge();
+    } catch (error) {
+      console.error(error);
+      setStatus("idle");
+      // Load a fresh challenge so the user can retry — the previous token may have expired.
+      await loadNewChallenge();
+      alert(error.message || "We encountered an issue. Please try again or use the direct email.");
+    }
   };
+
+  const questionText = loadingChallenge
+    ? "Loading…"
+    : (challenge?.question ? `What is ${challenge.question}?` : "Verification unavailable");
 
   return (
     <>
@@ -56,7 +106,7 @@ export default function ContactPage() {
                   <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${COLORS.primary}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}><Icon name="check_circle" size={32} style={{ color: COLORS.primary }} /></div>
                   <h3 style={{ fontFamily: FONTS.headline, fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Message Received</h3>
                   <p style={{ color: COLORS.onSurfaceVariant, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Thank you for reaching out. A member of the secretariat will get back to you shortly.</p>
-                  <button onClick={() => { setStatus("idle"); generateCaptcha(); }} style={{ background: "transparent", border: `1.5px solid ${COLORS.outlineVariant}`, color: COLORS.onSurface, padding: "10px 24px", borderRadius: 24, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Send another message</button>
+                  <button onClick={() => { setStatus("idle"); loadNewChallenge(); }} style={{ background: "transparent", border: `1.5px solid ${COLORS.outlineVariant}`, color: COLORS.onSurface, padding: "10px 24px", borderRadius: 24, fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Send another message</button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit}>
@@ -69,12 +119,13 @@ export default function ContactPage() {
                   <div style={{ marginBottom: 24, padding: "16px", background: COLORS.surfaceContainerLowest, borderRadius: 12, border: `1px solid ${captchaError?COLORS.error:COLORS.outlineVariant+"40"}` }}>
                     <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: captchaError?COLORS.error:COLORS.outline, marginBottom: 8 }}>Human Verification *</label>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 16, color: COLORS.onSurface }}>What is {captcha.num1} + {captcha.num2}?</span>
-                      <input type="number" required value={userAnswer} onChange={(e) => { setUserAnswer(e.target.value); if(captchaError) setCaptchaError(false); }} placeholder="Answer" style={{ width: 100, padding: "10px 14px", borderRadius: 8, border: `1.5px solid ${captchaError?COLORS.error:COLORS.outlineVariant}`, background: "#fff", fontSize: 14, outline: "none", color: COLORS.onSurface }} disabled={status==="loading"} />
+                      <span style={{ fontFamily: FONTS.headline, fontWeight: 800, fontSize: 16, color: COLORS.onSurface }}>{questionText}</span>
+                      <input type="number" required value={userAnswer} onChange={(e) => { setUserAnswer(e.target.value); if(captchaError) setCaptchaError(false); }} placeholder="Answer" style={{ width: 100, padding: "10px 14px", borderRadius: 8, border: `1.5px solid ${captchaError?COLORS.error:COLORS.outlineVariant}`, background: "#fff", fontSize: 14, outline: "none", color: COLORS.onSurface }} disabled={status==="loading" || loadingChallenge} />
+                      <button type="button" onClick={loadNewChallenge} disabled={loadingChallenge} title="Refresh question" style={{ background: "transparent", border: `1px solid ${COLORS.outlineVariant}`, borderRadius: 8, padding: "8px 10px", cursor: loadingChallenge ? "not-allowed" : "pointer", color: COLORS.onSurfaceVariant, fontSize: 12 }}>↻</button>
                     </div>
-                    {captchaError && <p style={{ color: COLORS.error, fontSize: 12, fontWeight: 600, marginTop: 8 }}>Incorrect answer. Please try again.</p>}
+                    {captchaError && <p style={{ color: COLORS.error, fontSize: 12, fontWeight: 600, marginTop: 8 }}>Please solve the verification question.</p>}
                   </div>
-                  <button type="submit" disabled={status==="loading"} style={{ background: GRADIENTS.primary, color: "#fff", padding: "16px 36px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, cursor: status==="loading"?"not-allowed":"pointer", width: m?"100%":"auto", opacity: status==="loading"?0.8:1 }}>{status === "loading" ? "Sending..." : "Submit Inquiry"}</button>
+                  <button type="submit" disabled={status==="loading" || loadingChallenge || !challenge} style={{ background: GRADIENTS.primary, color: "#fff", padding: "16px 36px", borderRadius: 12, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 14, cursor: (status==="loading" || loadingChallenge || !challenge)?"not-allowed":"pointer", width: m?"100%":"auto", opacity: (status==="loading" || loadingChallenge || !challenge)?0.8:1 }}>{status === "loading" ? "Sending..." : "Submit Inquiry"}</button>
                 </form>
               )}
             </div>
