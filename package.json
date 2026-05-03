@@ -17,6 +17,7 @@
     "@tiptap/react": "^2.10.3",
     "@tiptap/starter-kit": "^2.10.3",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.5.1",
     "dompurify": "^3.2.3",
     "jsonwebtoken": "^9.0.2",
     "otpauth": "^9.5.0",

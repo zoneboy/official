@@ -8,8 +8,6 @@ export const handler = async (event) => {
   if (event.httpMethod !== "POST") return err("Method Not Allowed", 405, event);
 
   // CSRF defense: reject requests whose Origin/Referer isn't our domain.
-  // This runs BEFORE token verification so we don't leak "token valid" vs
-  // "token invalid" signals to cross-origin callers.
   const originCheck = requireSameOrigin(event);
   if (originCheck) return originCheck;
 
@@ -45,6 +43,37 @@ export const handler = async (event) => {
         case "resources":
           await sql`INSERT INTO resources(id,title,description,file_url,category,publish_date,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.file_url||''},${item.category||'General'},${item.publish_date||null},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,file_url=EXCLUDED.file_url,category=EXCLUDED.category,publish_date=EXCLUDED.publish_date,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
+        case "galleries": {
+          // Sanitize JSONB inputs — accept arrays only, fall back to []
+          const videos = Array.isArray(item.videos) ? item.videos : [];
+          const images = Array.isArray(item.images) ? item.images : [];
+          await sql`
+            INSERT INTO galleries(id, title, event_name, description, cover_image, videos, images, event_date, sort_order, updated_at)
+            VALUES(
+              ${iid},
+              ${item.title || ''},
+              ${item.event_name || ''},
+              ${item.description || ''},
+              ${item.cover_image || ''},
+              ${JSON.stringify(videos)}::jsonb,
+              ${JSON.stringify(images)}::jsonb,
+              ${item.event_date || null},
+              ${item.sort_order || 0},
+              NOW()
+            )
+            ON CONFLICT(id) DO UPDATE SET
+              title = EXCLUDED.title,
+              event_name = EXCLUDED.event_name,
+              description = EXCLUDED.description,
+              cover_image = EXCLUDED.cover_image,
+              videos = EXCLUDED.videos,
+              images = EXCLUDED.images,
+              event_date = EXCLUDED.event_date,
+              sort_order = EXCLUDED.sort_order,
+              updated_at = NOW()
+          `;
+          break;
+        }
         default: return err(`Unknown table: ${table}`, 400, event);
       }
       return json({ success: true, id: iid }, 200, event);
@@ -73,6 +102,9 @@ export const handler = async (event) => {
           break;
         case "resources":
           await sql`DELETE FROM resources WHERE id = ${id}`;
+          break;
+        case "galleries":
+          await sql`DELETE FROM galleries WHERE id = ${id}`;
           break;
         default:
           return err(`Unknown table: ${table}`, 400, event);
@@ -104,6 +136,9 @@ export const handler = async (event) => {
             break;
           case "resources":
             await sql`UPDATE resources SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
+            break;
+          case "galleries":
+            await sql`UPDATE galleries SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
             break;
           default:
             return err(`Unknown table: ${table}`, 400, event);

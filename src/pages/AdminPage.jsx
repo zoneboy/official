@@ -1,18 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import RichTextEditor from "../components/RichTextEditor";
+import GalleryEditor from "../components/GalleryEditor";
+import { resolveFileUrl, needsSigning, clearFileUrlCache } from "../utils/resolveFileUrl";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const S = { bg:"#0a0f0a", card:"#111611", border:"#1e2a1e", accent:"#22c55e", accentDk:"#15803d", text:"#e8f5e9", dim:"#6b8a6b", dimmer:"#4a6b4a", hover:"#1a261a", danger:"#f87171", dangerBg:"#261a1a", dangerBd:"#3a2a2a", warning:"#fbbf24", warningBg:"#1a1a0a" };
 
-// ── Session timing constants ──
-// REFRESH_WHEN_REMAINING — auto-refresh when the token has this much time or less left
-// WARN_WHEN_REMAINING   — show a "session expiring soon" banner at this threshold
-// ACTIVITY_WINDOW_MS    — only auto-refresh if the admin has been active in the last N ms
-const REFRESH_WHEN_REMAINING = 15 * 60 * 1000;  // 15 minutes
-const WARN_WHEN_REMAINING    = 5 * 60 * 1000;   // 5 minutes
-const ACTIVITY_WINDOW_MS     = 10 * 60 * 1000;  // 10 minutes
+const REFRESH_WHEN_REMAINING = 15 * 60 * 1000;
+const WARN_WHEN_REMAINING    = 5 * 60 * 1000;
+const ACTIVITY_WINDOW_MS     = 10 * 60 * 1000;
 
-// ── Format "mm:ss" or "Xh Ym" for the countdown pill ──
 function formatTimeRemaining(ms) {
   if (ms <= 0) return "Expired";
   const totalSec = Math.floor(ms / 1000);
@@ -32,17 +29,31 @@ const FIELD_DEFS = {
   events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
   articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
   resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true,allowPrivate:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
+  galleries: [
+    {key:"title",label:"Internal Title",type:"text",required:true,ph:"Used for admin reference only"},
+    {key:"event_name",label:"Event Name (public)",type:"text",required:true,ph:"e.g., 3rd Annual Recyclers Conference"},
+    {key:"event_date",label:"Event Date",type:"date"},
+    {key:"description",label:"Description",type:"textarea",ph:"Short summary shown on the gallery page"},
+    {key:"cover_image",label:"Cover Image",type:"image"},
+    {key:"_media",label:"Videos & Photos",type:"gallery_media"},
+  ],
 };
-const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)} };
+const EMPTY = {
+  boardOfTrustees:{name:"",role:"",image:""},
+  leaders:{name:"",role:"",dept:"",image:""},
+  regional:{name:"",region:"South-South",image:""},
+  state:{name:"",state:"",image:""},
+  events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""},
+  articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""},
+  resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)},
+  galleries:{title:"",event_name:"",event_date:"",description:"",cover_image:"",videos:[],images:[]},
+};
 
-// ── Session status pill (shown in the top bar) ──
 function SessionPill({ expiresAt, onExtend }) {
   const [remaining, setRemaining] = useState(() => expiresAt - Date.now());
 
   useEffect(() => {
     if (!expiresAt) return;
-    // Update every second when < 10 min remain, every minute otherwise,
-    // so we're not burning CPU for a value that barely changes.
     const tick = () => setRemaining(expiresAt - Date.now());
     tick();
     const interval = remaining < 10 * 60 * 1000 ? 1000 : 30_000;
@@ -61,36 +72,17 @@ function SessionPill({ expiresAt, onExtend }) {
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <div title={`Session expires at ${new Date(expiresAt).toLocaleTimeString()}`}
            style={{
-             display: "flex",
-             alignItems: "center",
-             gap: 6,
-             padding: "4px 10px",
-             borderRadius: 12,
-             border,
-             background: bg,
-             fontSize: 10,
-             fontWeight: 700,
-             color,
-             fontFamily: "monospace",
-             letterSpacing: 0.5,
+             display: "flex", alignItems: "center", gap: 6,
+             padding: "4px 10px", borderRadius: 12,
+             border, background: bg,
+             fontSize: 10, fontWeight: 700, color,
+             fontFamily: "monospace", letterSpacing: 0.5,
            }}>
         <span style={{ fontSize: 10, opacity: 0.7 }}>⏱</span>
         {formatTimeRemaining(remaining)}
       </div>
       {warn && onExtend && (
-        <button
-          onClick={onExtend}
-          style={{
-            padding: "4px 10px",
-            borderRadius: 12,
-            background: S.warning,
-            border: "none",
-            color: "#1a1a0a",
-            fontSize: 10,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={onExtend} style={{ padding: "4px 10px", borderRadius: 12, background: S.warning, border: "none", color: "#1a1a0a", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
           Extend
         </button>
       )}
@@ -98,73 +90,53 @@ function SessionPill({ expiresAt, onExtend }) {
   );
 }
 
-// ── Modal shown when session fully expires ──
 function ExpiredModal({ onReLogin }) {
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 3000,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", padding: 20,
-    }}>
-      <div style={{
-        background: S.card,
-        border: `1px solid ${S.warning}40`,
-        borderRadius: 18,
-        padding: "36px 32px",
-        width: 440,
-        maxWidth: "100%",
-        boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
-        textAlign: "center",
-      }}>
-        <div style={{
-          width: 56, height: 56,
-          borderRadius: "50%",
-          background: `${S.warning}20`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          margin: "0 auto 18px",
-          fontSize: 26,
-        }}>⏱</div>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: S.text, marginBottom: 10 }}>
-          Session Expired
-        </h3>
-        <p style={{ fontSize: 13, color: S.dim, lineHeight: 1.6, marginBottom: 24 }}>
-          For security, your 8-hour session has ended. Any unsaved changes in the current
-          editor will be preserved when you log back in.
-        </p>
-        <button
-          onClick={onReLogin}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: 10,
-            background: `linear-gradient(135deg, ${S.accentDk}, ${S.accent})`,
-            color: "#fff",
-            border: "none",
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Log In Again
-        </button>
+    <div style={{ position: "fixed", inset: 0, zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", padding: 20 }}>
+      <div style={{ background: S.card, border: `1px solid ${S.warning}40`, borderRadius: 18, padding: "36px 32px", width: 440, maxWidth: "100%", boxShadow: "0 40px 80px rgba(0,0,0,0.6)", textAlign: "center" }}>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${S.warning}20`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: 26 }}>⏱</div>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: S.text, marginBottom: 10 }}>Session Expired</h3>
+        <p style={{ fontSize: 13, color: S.dim, lineHeight: 1.6, marginBottom: 24 }}>For security, your 8-hour session has ended. Any unsaved changes in the current editor will be preserved when you log back in.</p>
+        <button onClick={onReLogin} style={{ width: "100%", padding: "12px", borderRadius: 10, background: `linear-gradient(135deg, ${S.accentDk}, ${S.accent})`, color: "#fff", border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Log In Again</button>
       </div>
     </div>
   );
 }
 
-// ── File Upload Component ──
-function FileUploadField({ value, onChange, token, fieldType, allowPrivate = false }) {
+function FileUploadField({ value, onChange, token, fieldType, allowPrivate = false, folder = "ran/misc" }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  // Resolved preview URL for private Cloudinary assets. Public URLs/legacy URLs
+  // bypass this and use `value` directly.
+  const [resolvedPreview, setResolvedPreview] = useState(null);
+  const [resolvingPreview, setResolvingPreview] = useState(false);
 
   const isImage = fieldType === "image";
   const acceptStr = isImage ? "image/jpeg,image/png,image/gif,image/webp,image/svg+xml" : "application/pdf";
   const acceptLabel = isImage ? "JPG, PNG, GIF, WebP, SVG" : "PDF";
   const maxSizeMB = 7;
+
+  // Resolve private Cloudinary URLs when the stored value changes.
+  useEffect(() => {
+    let cancelled = false;
+    if (value && needsSigning(value) && token) {
+      setResolvingPreview(true);
+      resolveFileUrl(value, token).then((url) => {
+        if (!cancelled) {
+          setResolvedPreview(url);
+          setResolvingPreview(false);
+        }
+      });
+    } else {
+      setResolvedPreview(null);
+      setResolvingPreview(false);
+    }
+    return () => { cancelled = true; };
+  }, [value, token]);
 
   const uploadFile = async (file) => {
     setError("");
@@ -188,7 +160,7 @@ function FileUploadField({ value, onChange, token, fieldType, allowPrivate = fal
       const res = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ filename: file.name, content_type: file.type, data: base64, public: isPublic }),
+        body: JSON.stringify({ filename: file.name, content_type: file.type, data: base64, public: isPublic, folder }),
       });
       setProgress(80);
 
@@ -207,19 +179,44 @@ function FileUploadField({ value, onChange, token, fieldType, allowPrivate = fal
   const handleRemove = () => { onChange(""); setError(""); };
 
   const hasFile = value && value.trim() !== "";
-  const isUploadedFile = hasFile && value.startsWith("/api/file/");
+  const isLegacyFile = hasFile && value.startsWith("/api/file/");
+  const isPrivateCloudinary = hasFile && needsSigning(value);
+  const isCloudinaryFile = hasFile && value.includes("res.cloudinary.com");
   const isPdfFile = fieldType === "file";
+
+  // Decide what URL to show in the <img> preview. For private files, use the
+  // signed URL. For everything else, the stored value renders directly.
+  const previewSrc = isPrivateCloudinary ? resolvedPreview : value;
+
+  // What to show as the "file label" in the preview row
+  let fileLabel = "External URL";
+  if (isLegacyFile) fileLabel = "Uploaded file (legacy)";
+  else if (isPrivateCloudinary) fileLabel = "Private file (Cloudinary)";
+  else if (isCloudinaryFile) fileLabel = "Uploaded file (Cloudinary)";
 
   return (
     <div>
       {hasFile && !uploading && (
         <div style={{ marginBottom: 12, background: S.bg, border: `1px solid ${S.border}`, borderRadius: 10, padding: 12, display: "flex", alignItems: "center", gap: 12 }}>
-          {isImage && <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: S.hover, flexShrink: 0, border: `1px solid ${S.border}` }}><img src={value} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} /></div>}
+          {isImage && <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: S.hover, flexShrink: 0, border: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {resolvingPreview ? (
+              <span style={{ fontSize: 9, color: S.dimmer }}>Loading…</span>
+            ) : previewSrc ? (
+              <img src={previewSrc} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+            ) : (
+              <span style={{ fontSize: 9, color: S.dimmer }}>?</span>
+            )}
+          </div>}
           {isPdfFile && <div style={{ width: 48, height: 48, borderRadius: 8, background: "#1a1a2e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${S.border}` }}><span style={{ fontSize: 18, fontWeight: 900, color: "#f87171" }}>PDF</span></div>}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: S.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isUploadedFile ? "Uploaded file" : value}</p>
-            <p style={{ fontSize: 10, color: S.dimmer, marginTop: 2 }}>{isUploadedFile ? value : "External URL"}</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: S.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {fileLabel}
+            </p>
+            <p style={{ fontSize: 10, color: S.dimmer, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
           </div>
+          {isPdfFile && previewSrc && (
+            <a href={previewSrc} target="_blank" rel="noopener noreferrer" style={{ padding: "6px 12px", borderRadius: 6, background: S.hover, border: `1px solid #2a3a2a`, color: "#a3d9a3", fontSize: 11, fontWeight: 600, cursor: "pointer", textDecoration: "none", flexShrink: 0 }}>View</a>
+          )}
           <button type="button" onClick={handleRemove} style={{ padding: "6px 12px", borderRadius: 6, background: S.dangerBg, border: `1px solid ${S.dangerBd}`, color: S.danger, fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Remove</button>
         </div>
       )}
@@ -270,8 +267,8 @@ function UrlFallback({ onChange, isImage }) {
 export default function AdminPage({ setPage: setAppPage }) {
   const [authed, setAuthed] = useState(false);
   const [token, setToken] = useState("");
-  const [expiresAt, setExpiresAt] = useState(null);      // epoch ms — when the current token expires
-  const [sessionExpired, setSessionExpired] = useState(false); // when true → show re-login modal
+  const [expiresAt, setExpiresAt] = useState(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [loginUser, setLoginUser] = useState("admin");
   const [loginPass, setLoginPass] = useState("");
   const [loginErr, setLoginErr] = useState("");
@@ -288,28 +285,22 @@ export default function AdminPage({ setPage: setAppPage }) {
   const [disablePass, setDisablePass] = useState("");
 
   const [section, setSection] = useState("dashboard");
-  const [data, setData] = useState({ boardOfTrustees:[], leaders:[], regional:[], state:[], events:[], articles:[], resources:[] });
+  const [data, setData] = useState({ boardOfTrustees:[], leaders:[], regional:[], state:[], events:[], articles:[], resources:[], galleries:[] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [editType, setEditType] = useState(null);
 
-  // Activity tracking — last time the admin did anything (click, keypress, etc.)
-  // Used to gate auto-refresh so an abandoned tab doesn't keep itself alive.
   const lastActivityRef = useRef(Date.now());
   const refreshingRef = useRef(false);
 
   const show = useCallback((msg,type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); },[]);
 
-  // ── Handle 401 responses: if the token expired, show the modal instead of
-  //    a generic "Unauthorized" toast. Any open edit modal stays open so the
-  //    admin's in-progress work isn't lost.
   const handleAuthFailure = useCallback(() => {
     setSessionExpired(true);
   }, []);
 
-  // ── Refresh: call /api/cms-refresh with the current token, swap in the new one ──
   const refreshSession = useCallback(async () => {
     if (!token || refreshingRef.current) return false;
     refreshingRef.current = true;
@@ -320,7 +311,6 @@ export default function AdminPage({ setPage: setAppPage }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        // Refresh failed — session likely expired; surface the modal
         handleAuthFailure();
         return false;
       }
@@ -334,7 +324,6 @@ export default function AdminPage({ setPage: setAppPage }) {
     }
   }, [token, handleAuthFailure]);
 
-  // ── Track admin activity (any mouse/keyboard interaction) ──
   useEffect(() => {
     if (!authed) return;
     const markActive = () => { lastActivityRef.current = Date.now(); };
@@ -343,11 +332,6 @@ export default function AdminPage({ setPage: setAppPage }) {
     return () => events.forEach(e => window.removeEventListener(e, markActive));
   }, [authed]);
 
-  // ── Background session monitor ──
-  // Runs every 30s while logged in. Auto-refreshes if:
-  //   (a) less than 15 minutes left on the token, AND
-  //   (b) the admin was active in the last 10 minutes.
-  // If the token is fully expired, show the expired modal.
   useEffect(() => {
     if (!authed || !expiresAt) return;
     const tick = () => {
@@ -373,7 +357,21 @@ export default function AdminPage({ setPage: setAppPage }) {
       const res = await fetch("/api/cms-public");
       if (!res.ok) throw new Error("Fetch failed");
       const raw = await res.json();
-      setData({ boardOfTrustees: raw.boardOfTrustees||[], leaders: raw.leaders||[], regional: raw.regional||[], state: raw.stateCoords||[], events: (raw.events||[]).map(e=>({...e,event_date:e.event_date?e.event_date.slice(0,10):"",event_time:e.event_time||""})), articles: (raw.articles||[]).map(a=>({...a,publish_date:a.publish_date?a.publish_date.slice(0,10):""})), resources: (raw.resources||[]).map(r=>({...r,publish_date:r.publish_date?r.publish_date.slice(0,10):""})) });
+      setData({
+        boardOfTrustees: raw.boardOfTrustees||[],
+        leaders: raw.leaders||[],
+        regional: raw.regional||[],
+        state: raw.stateCoords||[],
+        events: (raw.events||[]).map(e=>({...e,event_date:e.event_date?e.event_date.slice(0,10):"",event_time:e.event_time||""})),
+        articles: (raw.articles||[]).map(a=>({...a,publish_date:a.publish_date?a.publish_date.slice(0,10):""})),
+        resources: (raw.resources||[]).map(r=>({...r,publish_date:r.publish_date?r.publish_date.slice(0,10):""})),
+        galleries: (raw.galleries||[]).map(g=>({
+          ...g,
+          event_date: g.event_date ? g.event_date.slice(0,10) : "",
+          videos: Array.isArray(g.videos) ? g.videos : [],
+          images: Array.isArray(g.images) ? g.images : [],
+        })),
+      });
     } catch(e) { console.error(e); }
     setLoading(false);
   },[]);
@@ -398,12 +396,7 @@ export default function AdminPage({ setPage: setAppPage }) {
     setLoginLoading(false);
   };
 
-  // ── Re-login flow when session expires while the admin is mid-edit ──
-  // The expired modal shows the login form. On success we simply swap in the
-  // new token — editItem / editType state is preserved, so unsaved work stays.
   const handleReLogin = async () => {
-    // Reset auth state so the login screen renders; the in-progress editItem
-    // stays in component state and will reappear once re-authenticated.
     setAuthed(false);
     setToken("");
     setExpiresAt(null);
@@ -458,7 +451,6 @@ export default function AdminPage({ setPage: setAppPage }) {
     else setSetupMsg(d.error||"Failed");
   };
 
-  // ── LOGIN SCREEN ──
   if (!authed) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:S.bg,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
       <div style={{position:"fixed",inset:0,opacity:0.04,backgroundImage:"radial-gradient(circle at 25% 25%,#22c55e 1px,transparent 1px),radial-gradient(circle at 75% 75%,#22c55e 1px,transparent 1px)",backgroundSize:"60px 60px"}}/>
@@ -469,7 +461,6 @@ export default function AdminPage({ setPage: setAppPage }) {
         </div>
         <a href="#" onClick={e=>{e.preventDefault();setAppPage("home");}} style={{display:"block",fontSize:12,color:S.accent,marginBottom:24,textDecoration:"none"}}>← Back to website</a>
 
-        {/* Tell the returning admin their draft is preserved */}
         {editItem && editType && (
           <div style={{background:`${S.accent}10`,border:`1px solid ${S.accent}30`,borderRadius:12,padding:"14px 16px",marginBottom:20}}>
             <p style={{color:S.accent,fontSize:13,fontWeight:600}}>
@@ -506,7 +497,18 @@ export default function AdminPage({ setPage: setAppPage }) {
     </div>
   );
 
-  const NAV = [{id:"dashboard",label:"Dashboard",icon:"◉"},{id:"boardOfTrustees",label:"Board of Trustees",icon:"⬡"},{id:"leaders",label:"Executive Leadership",icon:"★"},{id:"regional",label:"Regional Coordinators",icon:"◈"},{id:"state",label:"State Coordinators",icon:"◇"},{id:"events",label:"Events",icon:"▸"},{id:"articles",label:"News & Articles",icon:"▤"},{id:"resources",label:"Resources",icon:"▾"},{id:"security",label:"Security (2FA)",icon:"🔒"}];
+  const NAV = [
+    {id:"dashboard",label:"Dashboard",icon:"◉"},
+    {id:"boardOfTrustees",label:"Board of Trustees",icon:"⬡"},
+    {id:"leaders",label:"Executive Leadership",icon:"★"},
+    {id:"regional",label:"Regional Coordinators",icon:"◈"},
+    {id:"state",label:"State Coordinators",icon:"◇"},
+    {id:"events",label:"Events",icon:"▸"},
+    {id:"articles",label:"News & Articles",icon:"▤"},
+    {id:"resources",label:"Resources",icon:"▾"},
+    {id:"galleries",label:"Galleries",icon:"▣"},
+    {id:"security",label:"Security (2FA)",icon:"🔒"},
+  ];
 
   const renderList = (title,sub,items,type,cols,onAdd) => (
     <div>
@@ -516,17 +518,23 @@ export default function AdminPage({ setPage: setAppPage }) {
       </div>
       {items.length===0 && <p style={{color:S.dimmer,fontSize:14,padding:"40px 0",textAlign:"center"}}>No items yet.</p>}
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {items.map((item,idx) => (
-          <div key={item.id} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:40,height:40,borderRadius:10,background:item.image?`url(${item.image}) center/cover`:S.hover,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1px solid ${S.border}`,fontSize:15,fontWeight:800,color:S.dimmer,overflow:"hidden"}}>
-              {item.image ? <img src={item.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}} /> : (cols[0](item)||"?").charAt(0).toUpperCase()}
+        {items.map((item,idx) => {
+          const previewImage = item.image || item.cover_image || "";
+          return (
+            <div key={item.id} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:40,height:40,borderRadius:10,background:previewImage?`url(${previewImage}) center/cover`:S.hover,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1px solid ${S.border}`,fontSize:15,fontWeight:800,color:S.dimmer,overflow:"hidden"}}>
+                {previewImage ? <img src={previewImage} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}} /> : (cols[0](item)||"?").charAt(0).toUpperCase()}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{fontSize:14,fontWeight:700,color:S.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cols[0](item)}</p>
+                <p style={{fontSize:11,color:S.dim,marginTop:1}}>{cols[1](item)}</p>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:1}}><button onClick={()=>handleMove(type,idx,-1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12,padding:"1px 5px"}}>▲</button><button onClick={()=>handleMove(type,idx,1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12,padding:"1px 5px"}}>▼</button></div>
+              <button onClick={()=>{setEditItem({...item});setEditType(type);}} style={{padding:"7px 14px",borderRadius:8,background:S.hover,border:"1px solid #2a3a2a",color:"#a3d9a3",fontSize:11,fontWeight:600,cursor:"pointer"}}>Edit</button>
+              <button onClick={()=>handleDelete(type,item.id)} style={{padding:"7px 10px",borderRadius:8,background:S.dangerBg,border:`1px solid ${S.dangerBd}`,color:S.danger,fontSize:11,fontWeight:600,cursor:"pointer"}}>✕</button>
             </div>
-            <div style={{flex:1,minWidth:0}}><p style={{fontSize:14,fontWeight:700,color:S.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cols[0](item)}</p><p style={{fontSize:11,color:S.dim,marginTop:1}}>{cols[1](item)}</p></div>
-            <div style={{display:"flex",flexDirection:"column",gap:1}}><button onClick={()=>handleMove(type,idx,-1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12,padding:"1px 5px"}}>▲</button><button onClick={()=>handleMove(type,idx,1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12,padding:"1px 5px"}}>▼</button></div>
-            <button onClick={()=>{setEditItem({...item});setEditType(type);}} style={{padding:"7px 14px",borderRadius:8,background:S.hover,border:"1px solid #2a3a2a",color:"#a3d9a3",fontSize:11,fontWeight:600,cursor:"pointer"}}>Edit</button>
-            <button onClick={()=>handleDelete(type,item.id)} style={{padding:"7px 10px",borderRadius:8,background:S.dangerBg,border:`1px solid ${S.dangerBd}`,color:S.danger,fontSize:11,fontWeight:600,cursor:"pointer"}}>✕</button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -536,7 +544,16 @@ export default function AdminPage({ setPage: setAppPage }) {
       <h2 style={{fontSize:26,fontWeight:800,color:S.text,marginBottom:6}}>Dashboard</h2>
       <p style={{color:S.dim,fontSize:13,marginBottom:32}}>Overview of your website content</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14}}>
-        {[{l:"Trustees",c:data.boardOfTrustees.length,cl:"#f97316",s:"boardOfTrustees"},{l:"Leaders",c:data.leaders.length,cl:S.accent,s:"leaders"},{l:"Regional",c:data.regional.length,cl:"#f59e0b",s:"regional"},{l:"State",c:data.state.length,cl:"#8b5cf6",s:"state"},{l:"Events",c:data.events.length,cl:"#06b6d4",s:"events"},{l:"Articles",c:data.articles.length,cl:"#ec4899",s:"articles"},{l:"Resources",c:data.resources.length,cl:"#14b8a6",s:"resources"}].map(x=>
+        {[
+          {l:"Trustees",c:data.boardOfTrustees.length,cl:"#f97316",s:"boardOfTrustees"},
+          {l:"Leaders",c:data.leaders.length,cl:S.accent,s:"leaders"},
+          {l:"Regional",c:data.regional.length,cl:"#f59e0b",s:"regional"},
+          {l:"State",c:data.state.length,cl:"#8b5cf6",s:"state"},
+          {l:"Events",c:data.events.length,cl:"#06b6d4",s:"events"},
+          {l:"Articles",c:data.articles.length,cl:"#ec4899",s:"articles"},
+          {l:"Resources",c:data.resources.length,cl:"#14b8a6",s:"resources"},
+          {l:"Galleries",c:data.galleries.length,cl:"#a855f7",s:"galleries"},
+        ].map(x=>
           <div key={x.l} onClick={()=>setSection(x.s)} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:14,padding:"24px 20px",cursor:"pointer",position:"relative",overflow:"hidden"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=x.cl+"44";e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=S.border;e.currentTarget.style.transform="none";}}>
             <p style={{fontSize:36,fontWeight:900,color:x.cl,letterSpacing:-2}}>{x.c}</p><p style={{fontSize:12,fontWeight:600,color:S.dim}}>{x.l}</p></div>
         )}
@@ -606,6 +623,18 @@ export default function AdminPage({ setPage: setAppPage }) {
       case "events": return renderList("Events",`${data.events.length} events`,data.events,"events",[i=>i.title||"(Untitled)",i=>`${i.tag} — ${i.event_date||"No date"}`],()=>{setEditItem({id:uid(),...EMPTY.events});setEditType("events");});
       case "articles": return renderList("News & Articles",`${data.articles.length} publications`,data.articles,"articles",[i=>i.title||"(Untitled)",i=>`${i.tag} — ${i.publish_date||"No date"}`],()=>{setEditItem({id:uid(),...EMPTY.articles});setEditType("articles");});
       case "resources": return renderList("Resources",`${data.resources.length} files`,data.resources,"resources",[i=>i.title||"(Untitled)",i=>`${i.category} — ${i.publish_date||"No date"}`],()=>{setEditItem({id:uid(),...EMPTY.resources});setEditType("resources");});
+      case "galleries": return renderList("Galleries",`${data.galleries.length} galleries`,data.galleries,"galleries",
+        [
+          i => i.event_name || i.title || "(Untitled)",
+          i => {
+            const v = (i.videos || []).length;
+            const im = (i.images || []).length;
+            const date = i.event_date || "No date";
+            return `${date} — ${v} ${v === 1 ? "video" : "videos"}, ${im} ${im === 1 ? "image" : "images"}`;
+          },
+        ],
+        () => { setEditItem({id:uid(),...EMPTY.galleries}); setEditType("galleries"); }
+      );
       case "security": return renderSecurity();
       default: return renderDashboard();
     }
@@ -615,7 +644,21 @@ export default function AdminPage({ setPage: setAppPage }) {
     if(!editItem||!editType) return null;
     const fields=FIELD_DEFS[editType]||[];
     const isNew=!(data[editType]||[]).find(x=>x.id===editItem.id);
-    const modalWidth = editType === "articles" ? 840 : 580;
+    // Galleries get extra width because they have the media editor inside
+    const modalWidth = editType === "articles" ? 840 : editType === "galleries" ? 720 : 580;
+    // Map each table to its Cloudinary folder. Keep these in sync with the
+    // ALLOWED_FOLDERS whitelist in netlify/functions/upload.js.
+    const FOLDER_FOR_TABLE = {
+      boardOfTrustees: "ran/profiles",
+      leaders: "ran/profiles",
+      regional: "ran/profiles",
+      state: "ran/profiles",
+      events: "ran/events",
+      articles: "ran/articles",
+      resources: "ran/resources",
+      galleries: "ran/galleries",
+    };
+    const uploadFolder = FOLDER_FOR_TABLE[editType] || "ran/misc";
     return (
       <div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",padding:20}} onClick={()=>{setEditItem(null);setEditType(null);}}>
         <div onClick={e=>e.stopPropagation()} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:18,width:modalWidth,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",padding:"28px 24px",boxShadow:"0 40px 80px rgba(0,0,0,0.5)"}}>
@@ -625,19 +668,31 @@ export default function AdminPage({ setPage: setAppPage }) {
               if (f.type === "image") {
                 return <div key={f.key}>
                   <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}</label>
-                  <FileUploadField value={editItem[f.key] || ""} onChange={(val) => setEditItem({...editItem, [f.key]: val})} token={token} fieldType="image" />
+                  <FileUploadField value={editItem[f.key] || ""} onChange={(val) => setEditItem({...editItem, [f.key]: val})} token={token} fieldType="image" folder={uploadFolder} />
                 </div>;
               }
               if (f.type === "file") {
                 return <div key={f.key}>
                   <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}{f.required && <span style={{color:S.accent}}> *</span>}</label>
-                  <FileUploadField value={editItem[f.key] || ""} onChange={(val) => setEditItem({...editItem, [f.key]: val})} token={token} fieldType="file" allowPrivate={f.allowPrivate} />
+                  <FileUploadField value={editItem[f.key] || ""} onChange={(val) => setEditItem({...editItem, [f.key]: val})} token={token} fieldType="file" allowPrivate={f.allowPrivate} folder={uploadFolder} />
                 </div>;
               }
               if (f.type === "richtext") {
                 return <div key={f.key}>
                   <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}{f.required && <span style={{color:S.accent}}> *</span>}</label>
                   <RichTextEditor value={editItem[f.key] || ""} onChange={(val) => setEditItem({...editItem, [f.key]: val})} token={token} placeholder={f.ph || "Write content…"} />
+                </div>;
+              }
+              if (f.type === "gallery_media") {
+                return <div key={f.key} style={{ paddingTop: 8, borderTop: `1px solid ${S.border}` }}>
+                  <GalleryEditor
+                    videos={editItem.videos || []}
+                    images={editItem.images || []}
+                    onVideosChange={(vids) => setEditItem({...editItem, videos: vids})}
+                    onImagesChange={(imgs) => setEditItem({...editItem, images: imgs})}
+                    token={token}
+                    folder={uploadFolder}
+                  />
                 </div>;
               }
               return <div key={f.key}>
@@ -668,7 +723,7 @@ export default function AdminPage({ setPage: setAppPage }) {
         </nav>
         <div style={{padding:"12px 16px",borderTop:`1px solid ${S.border}`,display:"flex",flexDirection:"column",gap:8}}>
           <button onClick={()=>{setAppPage("home");window.scrollTo(0,0);}} style={{width:"100%",padding:"9px",borderRadius:8,background:S.hover,border:"1px solid #2a3a2a",color:"#a3d9a3",fontSize:11,fontWeight:600,cursor:"pointer"}}>← View Website</button>
-          <button onClick={()=>{setAuthed(false);setToken("");setExpiresAt(null);setLoginPass("");setTotpCode("");setNeedsTotp(false);setEditItem(null);setEditType(null);}} style={{width:"100%",padding:"9px",borderRadius:8,background:"#1a1a1a",border:"1px solid #2a2a2a",color:S.danger,fontSize:11,fontWeight:600,cursor:"pointer"}}>Sign Out</button>
+          <button onClick={()=>{clearFileUrlCache();setAuthed(false);setToken("");setExpiresAt(null);setLoginPass("");setTotpCode("");setNeedsTotp(false);setEditItem(null);setEditType(null);}} style={{width:"100%",padding:"9px",borderRadius:8,background:"#1a1a1a",border:"1px solid #2a2a2a",color:S.danger,fontSize:11,fontWeight:600,cursor:"pointer"}}>Sign Out</button>
         </div>
       </aside>
 
