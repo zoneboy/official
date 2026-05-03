@@ -1,4 +1,3 @@
-// src/pages/GalleryDetailPage.jsx
 import { useState, useEffect } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";

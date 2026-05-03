@@ -1,4 +1,3 @@
-// src/pages/GalleryPage.jsx
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
