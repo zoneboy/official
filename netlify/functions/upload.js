@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import crypto from "crypto";
 import { getDB, corsHeaders, requireSameOrigin, json, err } from "./db.js";
 import { verifyAuth } from "./auth-helper.js";
 
@@ -30,7 +30,6 @@ export const handler = async (event) => {
   const originCheck = requireSameOrigin(event);
   if (originCheck) return originCheck;
 
-  // 1. Verify the admin is authenticated
   const user = await verifyAuth(event);
   if (!user) return err("Unauthorized", 401, event);
 
@@ -76,41 +75,40 @@ export const handler = async (event) => {
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
     if (!cloudName || !apiKey || !apiSecret) {
-      return err("Cloudinary is not fully configured. Missing API keys.", 500, event);
+      // If you are missing env vars, the server will throw a 500 error here.
+      console.error("Missing Cloudinary Env Vars");
+      return err("Cloudinary is not fully configured.", 500, event);
     }
 
-    // Generate a UNIX timestamp (required for signature)
     const timestamp = Math.round(new Date().getTime() / 1000);
-
-    // Create the signature string. 
-    // Cloudinary requires parameters to be sorted alphabetically before signing.
     const paramsToSign = `timestamp=${timestamp}`;
 
-    // Generate the SHA-1 signature using Node's native crypto module
     const signature = crypto
       .createHash("sha1")
       .update(paramsToSign + apiSecret)
       .digest("hex");
 
     const base64DataUri = `data:${claimed};base64,${data}`;
-    
-    // Construct the payload
-    const formData = new URLSearchParams();
-    formData.append("file", base64DataUri);
-    formData.append("api_key", apiKey);
-    formData.append("timestamp", timestamp);
-    formData.append("signature", signature);
-
     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
 
+    // Send as JSON instead of URLSearchParams to prevent Base64 corruption
     const uploadRes = await fetch(cloudinaryUrl, {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        file: base64DataUri,
+        api_key: apiKey,
+        timestamp: timestamp,
+        signature: signature
+      }),
     });
 
     const uploadData = await uploadRes.json();
 
     if (!uploadRes.ok) {
+      console.error("Cloudinary Error:", uploadData);
       throw new Error(uploadData.error?.message || "Cloudinary signed upload failed");
     }
 
@@ -122,7 +120,17 @@ export const handler = async (event) => {
     }, 200, event);
 
   } catch (e) {
-    console.error("upload:", e);
-    return err("Upload failed", 500, event);
+    // Expose the raw error directly to the browser for debugging
+    console.error("UPLOAD FATAL ERROR:", e);
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        error: "Debug Error: " + e.message, 
+        stack: e.stack,
+        name: e.name
+      })
+    };
   }
+};
 };
