@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import RichTextEditor from "../components/RichTextEditor";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -7,6 +7,19 @@ const S = { bg:"#0a0f0a", card:"#111611", border:"#1e2a1e", accent:"#22c55e", ac
 const REFRESH_WHEN_REMAINING = 15 * 60 * 1000;
 const WARN_WHEN_REMAINING    = 5 * 60 * 1000;
 const ACTIVITY_WINDOW_MS     = 10 * 60 * 1000;
+
+// ── Cloudinary URL transform helper ──
+// Inserts a Cloudinary transform between /upload/ and the asset path so that
+// previews of already-uploaded images load as small, optimized thumbnails
+// rather than the multi-MB originals. Non-Cloudinary URLs pass through
+// unchanged so external image URLs still work.
+function cldThumb(url, size = 200) {
+  if (!url || typeof url !== "string") return url;
+  const m = url.match(/^(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/);
+  if (!m) return url;
+  if (/^[a-z]_[^/]+\//.test(m[2])) return url; // already has a transform
+  return `${m[1]}w_${size},h_${size},c_fill,q_auto,f_auto/${m[2]}`;
+}
 
 function formatTimeRemaining(ms) {
   if (ms <= 0) return "Expired";
@@ -24,10 +37,10 @@ const FIELD_DEFS = {
   leaders: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"role",label:"Role / Title",type:"text",required:true},{key:"dept",label:"Department",type:"text"},{key:"image",label:"Photo",type:"image"} ],
   regional: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"region",label:"Region",type:"select",options:["South-South","North-Central","North-East","South-East","South-West","North-West"]},{key:"image",label:"Photo",type:"image"} ],
   state: [ {key:"name",label:"Full Name",type:"text",required:true},{key:"state",label:"State",type:"text",required:true},{key:"image",label:"Photo",type:"image"} ],
-  events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key: "[REDACTED-SECRET]",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key: "[REDACTED-SECRET]",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
-  articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key: "[REDACTED-SECRET]",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
-  resources: [ {key:"title",label:"Title",type:"text",required:true},{key: "[REDACTED-SECRET]",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true,allowPrivate:true},{key: "[REDACTED-SECRET]",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
-  galleries: [ {key:"title",label:"Event/Gallery Title",type:"text",required:true},{key:"event_date",label:"Date",type:"date",required:true},{key: "[REDACTED-SECRET]",label:"Description",type:"textarea"},{key:"youtube_url",label:"YouTube URL (Optional)",type:"text",ph:"https://www.youtube.com/watch?v=..."},{key:"images",label:"Gallery Images",type:"image_list"} ],
+  events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
+  articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
+  resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true,allowPrivate:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
+  galleries: [ {key:"title",label:"Event/Gallery Title",type:"text",required:true},{key:"event_date",label:"Date",type:"date",required:true},{key:"description",label:"Description",type:"textarea"},{key:"youtube_url",label:"YouTube URL (Optional)",type:"text",ph:"https://www.youtube.com/watch?v=..."},{key:"images",label:"Gallery Images",type:"image_list"} ],
 };
 
 const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)}, galleries:{title:"",event_date:new Date().toISOString().slice(0,10),description:"",youtube_url:"",images:"[]"} };
@@ -127,7 +140,7 @@ function FileUploadField({ value, onChange, token, fieldType, allowPrivate = fal
     <div>
       {hasFile && !uploading && (
         <div style={{ marginBottom: 12, background: S.bg, border: `1px solid ${S.border}`, borderRadius: 10, padding: 12, display: "flex", alignItems: "center", gap: 12 }}>
-          {isImage && <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: S.hover, flexShrink: 0, border: `1px solid ${S.border}` }}><img src={value} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} /></div>}
+          {isImage && <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: S.hover, flexShrink: 0, border: `1px solid ${S.border}` }}><img src={cldThumb(value, 128)} alt="Preview" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} /></div>}
           {isPdfFile && <div style={{ width: 48, height: 48, borderRadius: 8, background: "#1a1a2e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${S.border}` }}><span style={{ fontSize: 18, fontWeight: 900, color: "#f87171" }}>PDF</span></div>}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: S.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isUploadedFile ? "Uploaded file" : value}</p>
@@ -177,110 +190,225 @@ function UrlFallback({ onChange, isImage }) {
   );
 }
 
+// ── Memoized upload row so unrelated rows don't re-render on progress ticks ──
+const UploadRow = memo(function UploadRow({ upload, onRetry }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12,
+      background: S.bg, padding: 8, borderRadius: 8,
+      border: `1px solid ${upload.status === "error" ? S.dangerBd : S.border}`,
+    }}>
+      <div style={{ width: 40, height: 40, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: S.hover }}>
+        {upload.preview && (
+          <img
+            src={upload.preview}
+            alt=""
+            loading="lazy"
+            style={{ width: "100%", height: "100%", objectFit: "cover", opacity: upload.status === "uploading" ? 0.5 : 1 }}
+          />
+        )}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: S.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {upload.name}
+          </p>
+          <p style={{ fontSize: 10, color: upload.status === "error" ? S.danger : S.dimmer }}>
+            {upload.status === "uploading" ? `${upload.progress}%` :
+             upload.status === "error" ? "Failed" :
+             upload.status === "queued" ? "Queued" : "Done"}
+          </p>
+        </div>
+        <div style={{ width: "100%", height: 4, background: S.hover, borderRadius: 2, overflow: "hidden" }}>
+          <div style={{
+            width: `${upload.progress}%`, height: "100%",
+            background: upload.status === "error" ? S.danger : S.accent,
+            transition: "width 0.2s",
+          }} />
+        </div>
+        {upload.error && <p style={{ fontSize: 9, color: S.danger, marginTop: 4 }}>{upload.error}</p>}
+      </div>
+
+      <div style={{ width: 32, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+        {upload.status === "success" && <span style={{ color: S.accent, fontSize: 16 }}>✓</span>}
+        {upload.status === "error" && (
+          <button onClick={() => onRetry(upload.id)} style={{ background: S.dangerBg, border: `1px solid ${S.dangerBd}`, color: S.danger, borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>Retry</button>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// ── Optimized batch image uploader ──
+// Built to handle hundreds of files at once without locking the UI:
+//   1. Concurrency limit (4 parallel) — instead of firing 230 XHRs at once.
+//   2. Throttled progress updates via requestAnimationFrame — at most one
+//      re-render per frame regardless of how many uploads are active.
+//   3. Object URLs are revoked when each upload finishes or the component
+//      unmounts, so the browser doesn't hold N blob references in memory.
+//   4. Each row is memoized — progress ticks don't re-render unrelated rows.
+const MAX_CONCURRENT = 4;
+
 function BatchImageUploadField({ value, onChange, cloudName, uploadPreset }) {
   const fileRef = useRef(null);
   const [uploads, setUploads] = useState([]);
   const urlsRef = useRef(value || []);
+  const queueRef = useRef([]);                    // ids waiting to start
+  const activeRef = useRef(0);                    // count of in-flight XHRs
+  const xhrMapRef = useRef(new Map());            // id -> XHR (for cancel)
+  const pendingProgressRef = useRef(new Map());   // id -> latest progress, flushed per frame
+  const rafScheduledRef = useRef(false);
 
   useEffect(() => { urlsRef.current = value || []; }, [value]);
+
+  // Cleanup: revoke any object URLs and abort in-flight uploads on unmount.
+  useEffect(() => () => {
+    xhrMapRef.current.forEach((xhr) => { try { xhr.abort(); } catch {} });
+    xhrMapRef.current.clear();
+    setUploads((prev) => {
+      prev.forEach((u) => { if (u.preview) URL.revokeObjectURL(u.preview); });
+      return prev;
+    });
+  }, []);
+
+  const flushProgress = useCallback(() => {
+    rafScheduledRef.current = false;
+    if (pendingProgressRef.current.size === 0) return;
+    const updates = pendingProgressRef.current;
+    pendingProgressRef.current = new Map();
+    setUploads((prev) => prev.map((u) => updates.has(u.id) ? { ...u, progress: updates.get(u.id) } : u));
+  }, []);
+
+  const scheduleProgressFlush = useCallback(() => {
+    if (rafScheduledRef.current) return;
+    rafScheduledRef.current = true;
+    requestAnimationFrame(flushProgress);
+  }, [flushProgress]);
+
+  const pump = useCallback(() => {
+    while (activeRef.current < MAX_CONCURRENT && queueRef.current.length > 0) {
+      const id = queueRef.current.shift();
+      startUpload(id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startUpload = useCallback((id) => {
+    setUploads((prev) => {
+      const upload = prev.find((u) => u.id === id);
+      if (!upload || !upload.file) return prev;
+      activeRef.current += 1;
+
+      const formData = new FormData();
+      formData.append("file", upload.file);
+      formData.append("upload_preset", uploadPreset);
+
+      const xhr = new XMLHttpRequest();
+      xhrMapRef.current.set(id, xhr);
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
+
+      xhr.upload.onprogress = (e) => {
+        if (!e.lengthComputable) return;
+        const percent = Math.round((e.loaded / e.total) * 100);
+        pendingProgressRef.current.set(id, percent);
+        scheduleProgressFlush();
+      };
+
+      xhr.onload = () => {
+        xhrMapRef.current.delete(id);
+        activeRef.current -= 1;
+        if (xhr.status === 200) {
+          try {
+            const res = JSON.parse(xhr.responseText);
+            urlsRef.current = [...urlsRef.current, res.secure_url];
+            onChange(urlsRef.current);
+            setUploads((p) => p.map((u) => {
+              if (u.id !== id) return u;
+              if (u.preview) URL.revokeObjectURL(u.preview);
+              return { ...u, status: "success", progress: 100, preview: null, file: null };
+            }));
+          } catch {
+            setUploads((p) => p.map((u) => u.id === id ? { ...u, status: "error", error: "Bad response" } : u));
+          }
+        } else {
+          let msg = "Upload failed";
+          try { msg = JSON.parse(xhr.responseText).error?.message || msg; } catch {}
+          setUploads((p) => p.map((u) => u.id === id ? { ...u, status: "error", error: msg } : u));
+        }
+        pump();
+      };
+
+      xhr.onerror = () => {
+        xhrMapRef.current.delete(id);
+        activeRef.current -= 1;
+        setUploads((p) => p.map((u) => u.id === id ? { ...u, status: "error", error: "Network error" } : u));
+        pump();
+      };
+
+      xhr.send(formData);
+
+      return prev.map((u) => u.id === id ? { ...u, status: "uploading", progress: 0, error: "" } : u);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudName, uploadPreset, onChange, pump, scheduleProgressFlush]);
 
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
     if (!selected.length) return;
-
-    const newUploads = selected.map(file => ({
-      id: Math.random().toString(36).substring(7),
+    const newUploads = selected.map((file) => ({
+      id: Math.random().toString(36).slice(2, 10),
       file,
-      preview: URL.createObjectURL(file), 
-      status: "pending",
+      name: file.name,
+      preview: URL.createObjectURL(file),
+      status: "queued",
       progress: 0,
-      error: ""
+      error: "",
     }));
-
-    setUploads(prev => [...prev, ...newUploads]);
-    newUploads.forEach(u => processUpload(u));
-    e.target.value = ""; 
+    setUploads((prev) => [...prev, ...newUploads]);
+    queueRef.current.push(...newUploads.map((u) => u.id));
+    pump();
+    e.target.value = "";
   };
 
-  const processUpload = (uploadObj) => {
-    setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "uploading", progress: 0, error: "" } : u));
+  const retry = useCallback((id) => {
+    setUploads((p) => p.map((u) => u.id === id ? { ...u, status: "queued", progress: 0, error: "" } : u));
+    queueRef.current.push(id);
+    pump();
+  }, [pump]);
 
-    const formData = new FormData();
-    formData.append("file", uploadObj.file);
-    formData.append("upload_preset", uploadPreset);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, progress: percent } : u));
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        const res = JSON.parse(xhr.responseText);
-        setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "success", progress: 100 } : u));
-        
-        urlsRef.current = [...urlsRef.current, res.secure_url];
-        onChange(urlsRef.current);
-      } else {
-        const errRes = JSON.parse(xhr.responseText);
-        setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "error", error: errRes.error?.message || "Upload failed" } : u));
-      }
-    };
-
-    xhr.onerror = () => {
-      setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "error", error: "Network error" } : u));
-    };
-
-    xhr.send(formData);
-  };
+  const successCount = uploads.filter((u) => u.status === "success").length;
+  const errorCount = uploads.filter((u) => u.status === "error").length;
+  const inFlightCount = uploads.length - successCount - errorCount;
 
   return (
     <div>
-      <div 
-        onClick={() => fileRef.current?.click()} 
+      <div
+        onClick={() => fileRef.current?.click()}
         style={{ border: `2px dashed ${S.border}`, borderRadius: 12, padding: "24px 16px", textAlign: "center", cursor: "pointer", background: S.bg, transition: "all 0.2s", marginBottom: 16 }}
       >
-        <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${S.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}><span style={{ fontSize: 20 }}>🖼️</span></div>
+        <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${S.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
+          <span style={{ fontSize: 20 }}>🖼️</span>
+        </div>
         <p style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>Click to select multiple images</p>
-        <p style={{ fontSize: 11, color: S.dimmer }}>Batch upload direct to Cloudinary • No size limits</p>
+        <p style={{ fontSize: 11, color: S.dimmer }}>Direct to Cloudinary • {MAX_CONCURRENT} parallel uploads • No size limits</p>
         <input ref={fileRef} type="file" multiple accept="image/*" onChange={handleFiles} style={{ display: "none" }} />
       </div>
 
       {uploads.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto", paddingRight: 4 }}>
-          {uploads.map(u => (
-            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, background: S.bg, padding: 8, borderRadius: 8, border: `1px solid ${u.status === "error" ? S.dangerBd : S.border}` }}>
-              <div style={{ width: 40, height: 40, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
-                <img src={u.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: u.status === "uploading" ? 0.5 : 1 }} />
-              </div>
-              
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: S.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.file.name}</p>
-                  <p style={{ fontSize: 10, color: u.status === "error" ? S.danger : S.dimmer }}>
-                    {u.status === "uploading" ? `${u.progress}%` : u.status === "error" ? "Failed" : "Done"}
-                  </p>
-                </div>
-                <div style={{ width: "100%", height: 4, background: S.hover, borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ width: `${u.progress}%`, height: "100%", background: u.status === "error" ? S.danger : S.accent, transition: "width 0.2s" }} />
-                </div>
-                {u.error && <p style={{ fontSize: 9, color: S.danger, marginTop: 4 }}>{u.error}</p>}
-              </div>
-
-              <div style={{ width: 32, display: "flex", justifyContent: "center", flexShrink: 0 }}>
-                {u.status === "success" && <span style={{ color: S.accent, fontSize: 16 }}>✓</span>}
-                {u.status === "error" && (
-                  <button onClick={() => processUpload(u)} style={{ background: S.dangerBg, border: `1px solid ${S.dangerBd}`, color: S.danger, borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>Retry</button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <>
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "8px 12px", marginBottom: 8, background: S.bg,
+            borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 11, color: S.dim,
+          }}>
+            <span>{uploads.length} files · {successCount} done · {inFlightCount} in progress{errorCount > 0 ? ` · ${errorCount} failed` : ""}</span>
+            {successCount === uploads.length && <span style={{ color: S.accent, fontWeight: 700 }}>✓ Complete</span>}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto", paddingRight: 4 }}>
+            {uploads.map((u) => <UploadRow key={u.id} upload={u} onRetry={retry} />)}
+          </div>
+        </>
       )}
     </div>
   );
@@ -447,7 +575,7 @@ export default function AdminPage({ setPage: setAppPage }) {
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {items.map((item,idx) => (
           <div key={item.id} style={{background:S.card,border:`1px solid ${S.border}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:40,height:40,borderRadius:10,background:item.image?`url(${item.image}) center/cover`:S.hover,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1px solid ${S.border}`,fontSize:15,fontWeight:800,color:S.dimmer,overflow:"hidden"}}>{item.image ? <img src={item.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} /> : "?"}</div>
+            <div style={{width:40,height:40,borderRadius:10,background:item.image?`url(${cldThumb(item.image, 80)}) center/cover`:S.hover,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1px solid ${S.border}`,fontSize:15,fontWeight:800,color:S.dimmer,overflow:"hidden"}}>{!item.image && "?"}</div>
             <div style={{flex:1,minWidth:0}}><p style={{fontSize:14,fontWeight:700,color:S.text}}>{cols[0](item)}</p><p style={{fontSize:11,color:S.dim}}>{cols[1](item)}</p></div>
             <div style={{display:"flex",flexDirection:"column",gap:1}}><button onClick={()=>handleMove(type,idx,-1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12}}>▲</button><button onClick={()=>handleMove(type,idx,1)} style={{background:"none",border:"none",color:S.dimmer,cursor:"pointer",fontSize:12}}>▼</button></div>
             <button onClick={()=>{setEditItem({...item});setEditType(type);}} style={{padding:"7px 14px",borderRadius:8,background:S.hover,border:"1px solid #2a3a2a",color:"#a3d9a3",fontSize:11,fontWeight:600,cursor:"pointer"}}>Edit</button>
@@ -503,23 +631,39 @@ export default function AdminPage({ setPage: setAppPage }) {
                     <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.dimmer, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>
                       {f.label} ({list.length} uploaded)
                     </label>
-                    
+
                     {list.length > 0 && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 8, marginBottom: 16 }}>
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                        gap: 8,
+                        marginBottom: 16,
+                        maxHeight: list.length > 30 ? 320 : "none",
+                        overflowY: list.length > 30 ? "auto" : "visible",
+                        padding: list.length > 30 ? 4 : 0,
+                        border: list.length > 30 ? `1px solid ${S.border}` : "none",
+                        borderRadius: list.length > 30 ? 8 : 0,
+                      }}>
                         {list.map((img, i) => (
-                          <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 8, overflow: "hidden", border: `1px solid ${S.border}` }}>
-                            <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            <button 
-                              onClick={() => { const copy = [...list]; copy.splice(i, 1); setEditItem({ ...editItem, [f.key]: JSON.stringify(copy) }); }} 
+                          <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 8, overflow: "hidden", border: `1px solid ${S.border}`, background: S.hover }}>
+                            <img
+                              src={cldThumb(img, 200)}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                            <button
+                              onClick={() => { const copy = [...list]; copy.splice(i, 1); setEditItem({ ...editItem, [f.key]: JSON.stringify(copy) }); }}
                               style={{ position: "absolute", top: 4, right: 4, background: S.dangerBg, color: S.danger, border: "none", borderRadius: "50%", width: 20, height: 20, fontSize: 10, cursor: "pointer" }}
                             >✕</button>
                           </div>
                         ))}
                       </div>
                     )}
-              
-                    <BatchImageUploadField 
-                      value={list} 
+
+                    <BatchImageUploadField
+                      value={list}
                       onChange={(newUrls) => setEditItem({ ...editItem, [f.key]: JSON.stringify(newUrls) })}
                       cloudName={import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "your_cloud_name"}
                       uploadPreset={import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "your_preset"}
