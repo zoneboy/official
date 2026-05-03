@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { getDB, corsHeaders, requireSameOrigin, json, err } from "./db.js";
 import { verifyAuth } from "./auth-helper.js";
 
@@ -75,7 +74,6 @@ export const handler = async (event) => {
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
     if (!cloudName || !apiKey || !apiSecret) {
-      // If you are missing env vars, the server will throw a 500 error here.
       console.error("Missing Cloudinary Env Vars");
       return err("Cloudinary is not fully configured.", 500, event);
     }
@@ -83,15 +81,16 @@ export const handler = async (event) => {
     const timestamp = Math.round(new Date().getTime() / 1000);
     const paramsToSign = `timestamp=${timestamp}`;
 
-    const signature = crypto
-      .createHash("sha1")
-      .update(paramsToSign + apiSecret)
-      .digest("hex");
+    // Use Global Web Crypto API to avoid import crashes
+    const encoder = new TextEncoder();
+    const dataToHash = encoder.encode(paramsToSign + apiSecret);
+    const hashBuffer = await crypto.subtle.digest("SHA-1", dataToHash);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     const base64DataUri = `data:${claimed};base64,${data}`;
     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
 
-    // Send as JSON instead of URLSearchParams to prevent Base64 corruption
     const uploadRes = await fetch(cloudinaryUrl, {
       method: "POST",
       headers: {
@@ -120,17 +119,11 @@ export const handler = async (event) => {
     }, 200, event);
 
   } catch (e) {
-    // Expose the raw error directly to the browser for debugging
-    console.error("UPLOAD FATAL ERROR:", e);
+    console.error("upload:", e);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        error: "Debug Error: " + e.message, 
-        stack: e.stack,
-        name: e.name
-      })
+      headers: corsHeaders(event),
+      body: JSON.stringify({ error: e.message || "Upload failed" })
     };
   }
-};
 };
