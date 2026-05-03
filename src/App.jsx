@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { COLORS, FONTS } from "./styles/tokens";
 import { Navbar, Footer } from "./components";
-import { HomePage, AboutPage, EventsPage, BlogPage, ContactPage, ArticlePage, MembershipGuidePage, ResourcesPage, PrivacyPolicyPage, TermsOfServicePage, AdminPage, GalleryPage, GalleryDetailPage } from "./pages";
+import { HomePage, AboutPage, EventsPage, BlogPage, ContactPage, ArticlePage, MembershipGuidePage, ResourcesPage, PrivacyPolicyPage, TermsOfServicePage, AdminPage } from "./pages";
 import { CMSProvider, useCMSData } from "./data/useCMSData";
 
 // ── URL ↔ page mapping ──
@@ -13,13 +13,13 @@ const PAGE_TO_PATH = {
   contact: "/contact",
   membership: "/membership",
   resources: "/resources",
-  gallery: "/gallery",
   privacy: "/privacy",
   terms: "/terms",
   admin: "/admin",
 };
 
 // ── Slugify a title for use in URLs ──
+// "The Crude Reality: How Global Oil Prices..." → "the-crude-reality-how-global-oil-prices"
 export function slugify(title) {
   if (!title) return "";
   return title
@@ -30,45 +30,38 @@ export function slugify(title) {
     .slice(0, 80);                  // keep URLs reasonable
 }
 
-// ── Parse the current URL into { page, articleSlug, gallerySlug } ──
+// ── Parse the current URL into { page, articleSlug } ──
 function parsePath(pathname) {
-  if (pathname === "/" || pathname === "") return { page: "home", articleSlug: null, gallerySlug: null };
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return { page: "admin", articleSlug: null, gallerySlug: null };
+  if (pathname === "/" || pathname === "") return { page: "home", articleSlug: null };
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return { page: "admin", articleSlug: null };
 
   // /blog/some-slug → article page
   const articleMatch = pathname.match(/^\/blog\/(.+?)\/?$/);
-  if (articleMatch) return { page: "article", articleSlug: articleMatch[1], gallerySlug: null };
-
-  // /gallery/some-slug → gallery detail page
-  const galleryMatch = pathname.match(/^\/gallery\/(.+?)\/?$/);
-  if (galleryMatch) return { page: "galleryDetail", articleSlug: null, gallerySlug: galleryMatch[1] };
+  if (articleMatch) return { page: "article", articleSlug: articleMatch[1] };
 
   // Known single-segment pages
   const trimmed = pathname.replace(/\/$/, "");
   const match = Object.entries(PAGE_TO_PATH).find(([, path]) => path === trimmed);
-  if (match) return { page: match[0], articleSlug: null, gallerySlug: null };
+  if (match) return { page: match[0], articleSlug: null };
 
-  return { page: "home", articleSlug: null, gallerySlug: null };
+  // Unknown path → treat as home (could also be a 404 page)
+  return { page: "home", articleSlug: null };
 }
 
-// ── Build a URL for a page + optional article/gallery ──
-function buildPath(page, payload) {
-  if (page === "article" && payload) {
-    return `/blog/${slugify(payload.title)}`;
-  }
-  if (page === "galleryDetail" && payload) {
-    return `/gallery/${slugify(payload.eventName || payload.title)}`;
+// ── Build a URL for a page + optional article ──
+function buildPath(page, article) {
+  if (page === "article" && article) {
+    return `/blog/${slugify(article.title)}`;
   }
   return PAGE_TO_PATH[page] || "/";
 }
 
-// ── Inner component (has access to CMS data for slug resolution) ──
+// ── Inner component (has access to CMS data for article-slug resolution) ──
 function AppInner() {
-  const { articles, galleries } = useCMSData();
+  const { articles } = useCMSData();
 
-  const [{ page, articleSlug, gallerySlug }, setRoute] = useState(() => parsePath(window.location.pathname));
+  const [{ page, articleSlug }, setRoute] = useState(() => parsePath(window.location.pathname));
   const [currentArticle, setCurrentArticle] = useState(null);
-  const [currentGallery, setCurrentGallery] = useState(null);
 
   // Listen to browser back/forward navigation
   useEffect(() => {
@@ -79,7 +72,7 @@ function AppInner() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // Resolve article from slug when CMS data loads
+  // When the route asks for an article by slug, resolve it from loaded CMS data
   useEffect(() => {
     if (page !== "article") {
       setCurrentArticle(null);
@@ -90,43 +83,22 @@ function AppInner() {
     setCurrentArticle(found || null);
   }, [page, articleSlug, articles]);
 
-  // Resolve gallery from slug when CMS data loads
-  useEffect(() => {
-    if (page !== "galleryDetail") {
-      setCurrentGallery(null);
-      return;
-    }
-    if (!gallerySlug || !galleries || galleries.length === 0) return;
-    const found = galleries.find((g) => slugify(g.eventName || g.title) === gallerySlug);
-    setCurrentGallery(found || null);
-  }, [page, gallerySlug, galleries]);
-
   // Navigate programmatically — updates both URL and state
-  const navigate = useCallback((nextPage, payload = null) => {
-    const path = buildPath(nextPage, payload);
+  const navigate = useCallback((nextPage, article = null) => {
+    const path = buildPath(nextPage, article);
     if (window.location.pathname !== path) {
       window.history.pushState({}, "", path);
     }
-    let nextArticleSlug = null;
-    let nextGallerySlug = null;
-    if (nextPage === "article" && payload) {
-      nextArticleSlug = slugify(payload.title);
-      setCurrentArticle(payload);
-    }
-    if (nextPage === "galleryDetail" && payload) {
-      nextGallerySlug = slugify(payload.eventName || payload.title);
-      setCurrentGallery(payload);
-    }
-    setRoute({ page: nextPage, articleSlug: nextArticleSlug, gallerySlug: nextGallerySlug });
+    setRoute({ page: nextPage, articleSlug: article ? slugify(article.title) : null });
+    if (article) setCurrentArticle(article);
     window.scrollTo(0, 0);
   }, []);
 
   // Legacy setPage(pageName) signature still works for all existing page components
   const setPage = useCallback((p) => navigate(p), [navigate]);
 
-  // Special handlers — these update URL to /blog/<slug> or /gallery/<slug>
+  // Special handler for opening an article: updates URL to /blog/<slug>
   const openArticle = useCallback((article) => navigate("article", article), [navigate]);
-  const openGallery = useCallback((gallery) => navigate("galleryDetail", gallery), [navigate]);
 
   if (page === "admin") {
     return (
@@ -138,19 +110,17 @@ function AppInner() {
 
   const renderPage = () => {
     switch (page) {
-      case "home":          return <HomePage setPage={setPage} setCurrentArticle={openArticle} />;
-      case "about":         return <AboutPage />;
-      case "events":        return <EventsPage />;
-      case "blog":          return <BlogPage setPage={setPage} setCurrentArticle={openArticle} />;
-      case "article":       return <ArticlePage setPage={setPage} article={currentArticle} />;
-      case "contact":       return <ContactPage />;
-      case "membership":    return <MembershipGuidePage />;
-      case "resources":     return <ResourcesPage />;
-      case "gallery":       return <GalleryPage setPage={setPage} setCurrentGallery={openGallery} />;
-      case "galleryDetail": return <GalleryDetailPage setPage={setPage} gallery={currentGallery} />;
-      case "privacy":       return <PrivacyPolicyPage />;
-      case "terms":         return <TermsOfServicePage />;
-      default:              return <HomePage setPage={setPage} setCurrentArticle={openArticle} />;
+      case "home":       return <HomePage setPage={setPage} setCurrentArticle={openArticle} />;
+      case "about":      return <AboutPage />;
+      case "events":     return <EventsPage />;
+      case "blog":       return <BlogPage setPage={setPage} setCurrentArticle={openArticle} />;
+      case "article":    return <ArticlePage setPage={setPage} article={currentArticle} />;
+      case "contact":    return <ContactPage />;
+      case "membership": return <MembershipGuidePage />;
+      case "resources":  return <ResourcesPage />;
+      case "privacy":    return <PrivacyPolicyPage />;
+      case "terms":      return <TermsOfServicePage />;
+      default:           return <HomePage setPage={setPage} setCurrentArticle={openArticle} />;
     }
   };
 

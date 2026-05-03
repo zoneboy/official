@@ -1,7 +1,7 @@
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 const LINKS = [
-  { title: "Quick Links", items: [{ label: "About Us", page: "about" }, { label: "Blog", page: "blog" }, { label: "Events", page: "events" }, { label: "Gallery", page: "gallery" }, { label: "Contact", page: "contact" }] },
+  { title: "Quick Links", items: [{ label: "About Us", page: "about" }, { label: "Blog", page: "blog" }, { label: "Events", page: "events" }, { label: "Contact", page: "contact" }] },
   { title: "Resources", items: [{ label: "Membership Guide", page: "membership" }, { label: "Resources", page: "resources" }, { label: "Privacy Policy", page: "privacy" }, { label: "Terms of Service", page: "terms" }] },
 ];
 const SOCIALS = [

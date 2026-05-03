@@ -8,7 +8,7 @@ export const handler = async (event) => {
 
   try {
     const sql = getDB();
-    const [boardOfTrustees, leaders, regional, stateCoords, events, articles, resources, galleries] = await Promise.all([
+    const [boardOfTrustees, leaders, regional, stateCoords, events, articles, resources] = await Promise.all([
       sql`SELECT id,name,role,image FROM board_of_trustees ORDER BY sort_order ASC`,
       sql`SELECT id,name,role,dept,image FROM leaders ORDER BY sort_order ASC`,
       sql`SELECT id,name,region,image FROM regional_coordinators ORDER BY sort_order ASC`,
@@ -16,9 +16,8 @@ export const handler = async (event) => {
       sql`SELECT id,title,tag,description,event_date,event_time,location,loc_type,image,link FROM events ORDER BY sort_order ASC`,
       sql`SELECT id,title,tag,description,publish_date,image,author,phone,company,content FROM articles ORDER BY sort_order ASC`,
       sql`SELECT id,title,description,file_url,category,publish_date FROM resources ORDER BY sort_order ASC`,
-      sql`SELECT id,title,event_name,description,cover_image,videos,images,event_date FROM galleries ORDER BY sort_order ASC`,
     ]);
-    return json({ boardOfTrustees, leaders, regional, stateCoords, events, articles, resources, galleries }, 200, event);
+    return json({ boardOfTrustees, leaders, regional, stateCoords, events, articles, resources }, 200, event);
   } catch (e) {
     console.error("cms-public:", e);
     return err("Failed to fetch content", 500, event);

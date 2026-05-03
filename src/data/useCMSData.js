@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, createElement } from "react";
 import { COLORS } from "../styles/tokens";
 
-const FALLBACK = { boardOfTrustees: [], leaders: [], regional: [], stateCoords: [], events: [], articles: [], resources: [], galleries: [] };
+const FALLBACK = { boardOfTrustees: [], leaders: [], regional: [], stateCoords: [], events: [], articles: [], resources: [] };
 const CMSContext = createContext({ ...FALLBACK, loading: true, error: null });
 
 const TAG_COLORS = {
@@ -27,6 +27,7 @@ function initials(name) {
   return name ? name.split(" ").map(function(w) { return w[0]; }).join("").slice(0, 2).toUpperCase() : "??";
 }
 
+// ── Detects whether content was saved as HTML (new WYSIWYG editor) or plain text (legacy) ──
 function isHtmlContent(content) {
   if (!content || typeof content !== "string") return false;
   return /<(p|h[1-6]|ul|ol|li|blockquote|strong|em|a|img|br)\b/i.test(content);
@@ -73,6 +74,9 @@ function xArticle(r, i) {
   var d = r.publish_date ? new Date(r.publish_date) : null;
   var c = TAG_COLORS[r.tag] || TAG_COLORS.Insights;
 
+  // Content handling:
+  //   - If HTML (from WYSIWYG), pass the raw string through. ArticlePage will detect & render.
+  //   - If plain text (legacy), split into paragraphs for the legacy renderer.
   var rawContent = r.content || "";
   var content;
   if (isHtmlContent(rawContent)) {
@@ -112,40 +116,6 @@ function xResource(r) {
   };
 }
 
-// ── Gallery transformer ──
-// Normalizes JSONB videos/images arrays. Videos arrive as {id, url, title} objects;
-// images arrive as plain URL strings. Anything malformed is filtered out.
-function xGallery(r, i) {
-  var d = r.event_date ? new Date(r.event_date) : null;
-
-  var rawVideos = Array.isArray(r.videos) ? r.videos : [];
-  var videos = rawVideos
-    .filter(function(v) { return v && typeof v === "object" && v.url; })
-    .map(function(v) {
-      return {
-        id: v.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)),
-        url: v.url,
-        title: v.title || "",
-      };
-    });
-
-  var rawImages = Array.isArray(r.images) ? r.images : [];
-  var images = rawImages.filter(function(img) { return typeof img === "string" && img.trim(); });
-
-  return {
-    id: r.id,
-    title: r.title || "",
-    eventName: r.event_name || r.title || "",
-    description: r.description || "",
-    coverImage: r.cover_image || "",
-    videos: videos,
-    images: images,
-    date: d ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" }) : "",
-    rawDate: r.event_date || null,
-    gradient: GRADS[i % GRADS.length],
-  };
-}
-
 export function CMSProvider(props) {
   var children = props.children;
   var _d = useState(FALLBACK), data = _d[0], setData = _d[1];
@@ -169,7 +139,6 @@ export function CMSProvider(props) {
             events: (raw.events || []).map(xEvent),
             articles: (raw.articles || []).map(xArticle),
             resources: (raw.resources || []).map(xResource),
-            galleries: (raw.galleries || []).map(xGallery),
           });
           setLoading(false);
         }
@@ -192,7 +161,6 @@ export function CMSProvider(props) {
     events: data.events,
     articles: data.articles,
     resources: data.resources,
-    galleries: data.galleries,
     loading: loading,
     error: error,
   };
