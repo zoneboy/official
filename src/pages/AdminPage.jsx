@@ -27,7 +27,7 @@ const FIELD_DEFS = {
   events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key: "[REDACTED-SECRET]",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key: "[REDACTED-SECRET]",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
   articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key: "[REDACTED-SECRET]",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
   resources: [ {key:"title",label:"Title",type:"text",required:true},{key: "[REDACTED-SECRET]",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true,allowPrivate:true},{key: "[REDACTED-SECRET]",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
-  galleries: [ {key:"title",label:"Event/Gallery Title",type:"text",required:true},{key:"event_date",label:"Date",type:"date",required:true},{key:"description",label:"Description",type:"textarea"},{key:"youtube_url",label:"YouTube URL (Optional)",type:"text",ph:"https://www.youtube.com/watch?v=..."},{key:"images",label:"Gallery Images",type:"image_list"} ],
+  galleries: [ {key:"title",label:"Event/Gallery Title",type:"text",required:true},{key:"event_date",label:"Date",type:"date",required:true},{key: "[REDACTED-SECRET]",label:"Description",type:"textarea"},{key:"youtube_url",label:"YouTube URL (Optional)",type:"text",ph:"https://www.youtube.com/watch?v=..."},{key:"images",label:"Gallery Images",type:"image_list"} ],
 };
 
 const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)}, galleries:{title:"",event_date:new Date().toISOString().slice(0,10),description:"",youtube_url:"",images:"[]"} };
@@ -173,6 +173,115 @@ function UrlFallback({ onChange, isImage }) {
       <input value={urlVal} onChange={(e) => setUrlVal(e.target.value)} placeholder={isImage ? "https://example.com/photo.jpg" : "/resources/file.pdf"} style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.bg, color: S.text, fontSize: 12, outline: "none" }} />
       <button type="button" onClick={() => { if (urlVal.trim()) { onChange(urlVal.trim()); setUrlVal(""); setShowUrl(false); } }} style={{ padding: "9px 14px", borderRadius: 8, background: S.hover, border: `1px solid #2a3a2a`, color: "#a3d9a3", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Use</button>
       <button type="button" onClick={() => { setShowUrl(false); setUrlVal(""); }} style={{ padding: "9px 10px", borderRadius: 8, background: "none", border: `1px solid ${S.border}`, color: S.dimmer, fontSize: 11, cursor: "pointer" }}>✕</button>
+    </div>
+  );
+}
+
+function BatchImageUploadField({ value, onChange, cloudName, uploadPreset }) {
+  const fileRef = useRef(null);
+  const [uploads, setUploads] = useState([]);
+  const urlsRef = useRef(value || []);
+
+  useEffect(() => { urlsRef.current = value || []; }, [value]);
+
+  const handleFiles = (e) => {
+    const selected = Array.from(e.target.files);
+    if (!selected.length) return;
+
+    const newUploads = selected.map(file => ({
+      id: Math.random().toString(36).substring(7),
+      file,
+      preview: URL.createObjectURL(file), 
+      status: "pending",
+      progress: 0,
+      error: ""
+    }));
+
+    setUploads(prev => [...prev, ...newUploads]);
+    newUploads.forEach(u => processUpload(u));
+    e.target.value = ""; 
+  };
+
+  const processUpload = (uploadObj) => {
+    setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "uploading", progress: 0, error: "" } : u));
+
+    const formData = new FormData();
+    formData.append("file", uploadObj.file);
+    formData.append("upload_preset", uploadPreset);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, progress: percent } : u));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "success", progress: 100 } : u));
+        
+        urlsRef.current = [...urlsRef.current, res.secure_url];
+        onChange(urlsRef.current);
+      } else {
+        const errRes = JSON.parse(xhr.responseText);
+        setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "error", error: errRes.error?.message || "Upload failed" } : u));
+      }
+    };
+
+    xhr.onerror = () => {
+      setUploads(prev => prev.map(u => u.id === uploadObj.id ? { ...u, status: "error", error: "Network error" } : u));
+    };
+
+    xhr.send(formData);
+  };
+
+  return (
+    <div>
+      <div 
+        onClick={() => fileRef.current?.click()} 
+        style={{ border: `2px dashed ${S.border}`, borderRadius: 12, padding: "24px 16px", textAlign: "center", cursor: "pointer", background: S.bg, transition: "all 0.2s", marginBottom: 16 }}
+      >
+        <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${S.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}><span style={{ fontSize: 20 }}>🖼️</span></div>
+        <p style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>Click to select multiple images</p>
+        <p style={{ fontSize: 11, color: S.dimmer }}>Batch upload direct to Cloudinary • No size limits</p>
+        <input ref={fileRef} type="file" multiple accept="image/*" onChange={handleFiles} style={{ display: "none" }} />
+      </div>
+
+      {uploads.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto", paddingRight: 4 }}>
+          {uploads.map(u => (
+            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, background: S.bg, padding: 8, borderRadius: 8, border: `1px solid ${u.status === "error" ? S.dangerBd : S.border}` }}>
+              <div style={{ width: 40, height: 40, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
+                <img src={u.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: u.status === "uploading" ? 0.5 : 1 }} />
+              </div>
+              
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: S.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.file.name}</p>
+                  <p style={{ fontSize: 10, color: u.status === "error" ? S.danger : S.dimmer }}>
+                    {u.status === "uploading" ? `${u.progress}%` : u.status === "error" ? "Failed" : "Done"}
+                  </p>
+                </div>
+                <div style={{ width: "100%", height: 4, background: S.hover, borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${u.progress}%`, height: "100%", background: u.status === "error" ? S.danger : S.accent, transition: "width 0.2s" }} />
+                </div>
+                {u.error && <p style={{ fontSize: 9, color: S.danger, marginTop: 4 }}>{u.error}</p>}
+              </div>
+
+              <div style={{ width: 32, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                {u.status === "success" && <span style={{ color: S.accent, fontSize: 16 }}>✓</span>}
+                {u.status === "error" && (
+                  <button onClick={() => processUpload(u)} style={{ background: S.dangerBg, border: `1px solid ${S.dangerBd}`, color: S.danger, borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>Retry</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -389,18 +498,34 @@ export default function AdminPage({ setPage: setAppPage }) {
             {fields.map(f => {
               if (f.type === "image_list") {
                 const list = (typeof editItem[f.key] === "string" ? JSON.parse(editItem[f.key] || "[]") : editItem[f.key]) || [];
-                return <div key={f.key}>
-                  <label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}</label>
-                  {list.length > 0 && <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:8,marginBottom:12}}>
-                    {list.map((img, i) => (
-                      <div key={i} style={{position:"relative",aspectRatio:"1",borderRadius:8,overflow:"hidden",border:`1px solid ${S.border}`}}>
-                        <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} />
-                        <button onClick={()=>{ const copy=[...list]; copy.splice(i,1); setEditItem({...editItem, [f.key]: JSON.stringify(copy)}); }} style={{position:"absolute",top:4,right:4,background:S.dangerBg,color:S.danger,border:"none",borderRadius:"50%",width:20,height:20,fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                return (
+                  <div key={f.key}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.dimmer, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>
+                      {f.label} ({list.length} uploaded)
+                    </label>
+                    
+                    {list.length > 0 && (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 8, marginBottom: 16 }}>
+                        {list.map((img, i) => (
+                          <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 8, overflow: "hidden", border: `1px solid ${S.border}` }}>
+                            <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <button 
+                              onClick={() => { const copy = [...list]; copy.splice(i, 1); setEditItem({ ...editItem, [f.key]: JSON.stringify(copy) }); }} 
+                              style={{ position: "absolute", top: 4, right: 4, background: S.dangerBg, color: S.danger, border: "none", borderRadius: "50%", width: 20, height: 20, fontSize: 10, cursor: "pointer" }}
+                            >✕</button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>}
-                  <FileUploadField value="" onChange={(val) => { if(val) setEditItem({...editItem, [f.key]: JSON.stringify([...list, val])}); }} token={token} fieldType="image" />
-                </div>;
+                    )}
+              
+                    <BatchImageUploadField 
+                      value={list} 
+                      onChange={(newUrls) => setEditItem({ ...editItem, [f.key]: JSON.stringify(newUrls) })}
+                      cloudName={import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "your_cloud_name"}
+                      uploadPreset={import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "your_preset"}
+                    />
+                  </div>
+                );
               }
               if (f.type === "image") {
                 return <div key={f.key}><label style={{display:"block",fontSize:10,fontWeight:700,color:S.dimmer,letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>{f.label}</label><FileUploadField value={editItem[f.key] || ""} onChange={(val) => setEditItem({...editItem, [f.key]: val})} token={token} fieldType="image" /></div>;

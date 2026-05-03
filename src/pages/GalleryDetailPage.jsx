@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
@@ -12,14 +12,50 @@ function getEmbedUrl(url) {
 export default function GalleryDetailPage({ setPage, gallery }) {
   const { isMobile: m } = useBreakpoints();
   const [idx, setIdx] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Swipe state
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  const images = gallery?.images || [];
+
+  const nextSlide = useCallback(() => setIdx((prev) => (prev + 1) % images.length), [images.length]);
+  const prevSlide = useCallback(() => setIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1)), [images.length]);
+
+  // Auto-play interval (pauses when in fullscreen)
   useEffect(() => {
-    if (!gallery || !gallery.images || gallery.images.length <= 1) return;
+    if (!images || images.length <= 1 || isFullscreen) return;
     const timer = setInterval(() => {
-      setIdx((prev) => (prev + 1) % gallery.images.length);
+      setIdx((prev) => (prev + 1) % images.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [gallery, idx]); 
+  }, [images, isFullscreen]); 
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowRight") nextSlide();
+      if (e.key === "ArrowLeft") prevSlide();
+      if (e.key === "Escape" && isFullscreen) setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nextSlide, prevSlide, isFullscreen]);
+
+  // Touch handlers for swiping
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > minSwipeDistance) nextSlide();
+    if (distance < -minSwipeDistance) prevSlide();
+  };
 
   if (!gallery) {
     return (
@@ -31,10 +67,33 @@ export default function GalleryDetailPage({ setPage, gallery }) {
   }
 
   const embedUrl = getEmbedUrl(gallery.youtubeUrl);
-  const images = gallery.images || [];
 
   return (
     <article style={{ minHeight: "100vh", background: COLORS.surface, paddingBottom: 80 }}>
+      {/* Fullscreen Lightbox Modal */}
+      {isFullscreen && images.length > 0 && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
+          <button onClick={() => setIsFullscreen(false)} style={{ position: "absolute", top: 24, right: 24, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10000, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.2)"} onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.1)"}>
+            <Icon name="close" size={28} />
+          </button>
+          
+          <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", padding: m ? 0 : 60 }}>
+            <img src={images[idx]} alt={`Slide ${idx + 1}`} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", userSelect: "none" }} />
+            
+            {images.length > 1 && !m && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); prevSlide(); }} style={{ position: "absolute", left: 32, top: "50%", transform: "translateY(-50%)", width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.2)"} onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.1)"}><Icon name="chevron_left" size={36} /></button>
+                <button onClick={(e) => { e.stopPropagation(); nextSlide(); }} style={{ position: "absolute", right: 32, top: "50%", transform: "translateY(-50%)", width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.2)"} onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.1)"}><Icon name="chevron_right" size={36} /></button>
+              </>
+            )}
+            <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "#fff", padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>
+              {idx + 1} / {images.length}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Normal Page Content */}
       <div style={{ background: COLORS.surfaceContainerLowest, borderBottom: `1px solid ${COLORS.outlineVariant}30`, padding: m ? "24px 20px" : "32px 48px", position: "sticky", top: 72, zIndex: 40 }}>
         <button onClick={() => { setPage("gallery"); window.scrollTo(0, 0); }} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: COLORS.primary, border: "none", fontFamily: FONTS.headline, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0, marginBottom: 16 }}>
           <Icon name="arrow_back" size={18} /> Back to Galleries
@@ -60,12 +119,20 @@ export default function GalleryDetailPage({ setPage, gallery }) {
 
         {images.length > 0 && (
           <FadeIn delay={0.2}><div style={{ background: COLORS.surfaceContainerLowest, borderRadius: 16, overflow: "hidden", border: `1px solid ${COLORS.outlineVariant}30`, boxShadow: "0 12px 32px rgba(0,0,0,0.05)" }}>
-            <div style={{ position: "relative", height: m ? 300 : 540, background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            
+            {/* Main Image Viewer */}
+            <div 
+              onClick={() => setIsFullscreen(true)}
+              onTouchStart={onTouchStart} 
+              onTouchMove={onTouchMove} 
+              onTouchEnd={onTouchEnd} 
+              style={{ position: "relative", height: m ? 300 : 540, background: COLORS.surfaceContainerHigh, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in" }}
+            >
               <img src={images[idx]} alt={`Slide ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#111" }} />
               
               {images.length > 1 && <>
-                <button onClick={() => setIdx(idx === 0 ? images.length - 1 : idx - 1)} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.4)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}><Icon name="chevron_left" size={28} /></button>
-                <button onClick={() => setIdx((idx + 1) % images.length)} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.4)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}><Icon name="chevron_right" size={28} /></button>
+                <button onClick={(e) => { e.stopPropagation(); prevSlide(); }} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.4)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}><Icon name="chevron_left" size={28} /></button>
+                <button onClick={(e) => { e.stopPropagation(); nextSlide(); }} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.4)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}><Icon name="chevron_right" size={28} /></button>
                 
                 <div style={{ position: "absolute", bottom: 16, right: 16, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 12px", borderRadius: 16, fontSize: 12, fontWeight: 700, backdropFilter: "blur(4px)" }}>
                   {idx + 1} / {images.length}
@@ -73,6 +140,7 @@ export default function GalleryDetailPage({ setPage, gallery }) {
               </>}
             </div>
 
+            {/* Thumbnails */}
             {images.length > 1 && (
               <div style={{ display: "flex", gap: 8, padding: 16, overflowX: "auto", background: COLORS.surfaceContainerLowest, borderTop: `1px solid ${COLORS.outlineVariant}30` }}>
                 {images.map((img, i) => (
