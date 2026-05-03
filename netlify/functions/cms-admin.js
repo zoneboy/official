@@ -1,5 +1,4 @@
 // netlify/functions/cms-admin.js
-// PROTECTED CRUD endpoint — JWT verified, same-origin enforced.
 import { getDB, json, err, corsHeaders, requireSameOrigin } from "./db.js";
 import { verifyAuth } from "./auth-helper.js";
 
@@ -7,9 +6,6 @@ export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: corsHeaders(event), body: "" };
   if (event.httpMethod !== "POST") return err("Method Not Allowed", 405, event);
 
-  // CSRF defense: reject requests whose Origin/Referer isn't our domain.
-  // This runs BEFORE token verification so we don't leak "token valid" vs
-  // "token invalid" signals to cross-origin callers.
   const originCheck = requireSameOrigin(event);
   if (originCheck) return originCheck;
 
@@ -45,6 +41,9 @@ export const handler = async (event) => {
         case "resources":
           await sql`INSERT INTO resources(id,title,description,file_url,category,publish_date,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.file_url||''},${item.category||'General'},${item.publish_date||null},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,file_url=EXCLUDED.file_url,category=EXCLUDED.category,publish_date=EXCLUDED.publish_date,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
+        case "galleries":
+          await sql`INSERT INTO galleries(id,title,description,event_date,youtube_url,images,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.event_date||null},${item.youtube_url||''},${item.images||'[]'},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,event_date=EXCLUDED.event_date,youtube_url=EXCLUDED.youtube_url,images=EXCLUDED.images,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
+          break;
         default: return err(`Unknown table: ${table}`, 400, event);
       }
       return json({ success: true, id: iid }, 200, event);
@@ -53,29 +52,15 @@ export const handler = async (event) => {
     if (action === "delete") {
       if (!id) return err("ID required", 400, event);
       switch (table) {
-        case "boardOfTrustees":
-          await sql`DELETE FROM board_of_trustees WHERE id = ${id}`;
-          break;
-        case "leaders":
-          await sql`DELETE FROM leaders WHERE id = ${id}`;
-          break;
-        case "regional":
-          await sql`DELETE FROM regional_coordinators WHERE id = ${id}`;
-          break;
-        case "state":
-          await sql`DELETE FROM state_coordinators WHERE id = ${id}`;
-          break;
-        case "events":
-          await sql`DELETE FROM events WHERE id = ${id}`;
-          break;
-        case "articles":
-          await sql`DELETE FROM articles WHERE id = ${id}`;
-          break;
-        case "resources":
-          await sql`DELETE FROM resources WHERE id = ${id}`;
-          break;
-        default:
-          return err(`Unknown table: ${table}`, 400, event);
+        case "boardOfTrustees": await sql`DELETE FROM board_of_trustees WHERE id = ${id}`; break;
+        case "leaders": await sql`DELETE FROM leaders WHERE id = ${id}`; break;
+        case "regional": await sql`DELETE FROM regional_coordinators WHERE id = ${id}`; break;
+        case "state": await sql`DELETE FROM state_coordinators WHERE id = ${id}`; break;
+        case "events": await sql`DELETE FROM events WHERE id = ${id}`; break;
+        case "articles": await sql`DELETE FROM articles WHERE id = ${id}`; break;
+        case "resources": await sql`DELETE FROM resources WHERE id = ${id}`; break;
+        case "galleries": await sql`DELETE FROM galleries WHERE id = ${id}`; break;
+        default: return err(`Unknown table: ${table}`, 400, event);
       }
       return json({ success: true, deleted: id }, 200, event);
     }
@@ -84,29 +69,15 @@ export const handler = async (event) => {
       if (!items) return err("Items array required", 400, event);
       for (const it of items) {
         switch (table) {
-          case "boardOfTrustees":
-            await sql`UPDATE board_of_trustees SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          case "leaders":
-            await sql`UPDATE leaders SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          case "regional":
-            await sql`UPDATE regional_coordinators SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          case "state":
-            await sql`UPDATE state_coordinators SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          case "events":
-            await sql`UPDATE events SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          case "articles":
-            await sql`UPDATE articles SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          case "resources":
-            await sql`UPDATE resources SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`;
-            break;
-          default:
-            return err(`Unknown table: ${table}`, 400, event);
+          case "boardOfTrustees": await sql`UPDATE board_of_trustees SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "leaders": await sql`UPDATE leaders SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "regional": await sql`UPDATE regional_coordinators SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "state": await sql`UPDATE state_coordinators SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "events": await sql`UPDATE events SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "articles": await sql`UPDATE articles SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "resources": await sql`UPDATE resources SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          case "galleries": await sql`UPDATE galleries SET sort_order = ${it.sort_order}, updated_at = NOW() WHERE id = ${it.id}`; break;
+          default: return err(`Unknown table: ${table}`, 400, event);
         }
       }
       return json({ success: true, reordered: items.length }, 200, event);
