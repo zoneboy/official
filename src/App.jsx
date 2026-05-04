@@ -73,7 +73,7 @@ function AppInner() {
 
   const renderPage = () => {
     switch (page) {
-      case "home":       return <HomePage setPage={setPage} setCurrentArticle={openArticle} />;
+      case "home":       return <HomePage setPage={setPage} setCurrentArticle={openArticle} setCurrentGallery={openGallery} />;
       case "about":      return <AboutPage />;
       case "events":     return <EventsPage />;
       case "gallery":    return <GalleryPage setPage={setPage} setCurrentGallery={openGallery} />;
@@ -85,7 +85,7 @@ function AppInner() {
       case "resources":  return <ResourcesPage />;
       case "privacy":    return <PrivacyPolicyPage />;
       case "terms":      return <TermsOfServicePage />;
-      default:           return <HomePage setPage={setPage} setCurrentArticle={openArticle} />;
+      default:           return <HomePage setPage={setPage} setCurrentArticle={openArticle} setCurrentGallery={openGallery} />;
     }
   };
 
