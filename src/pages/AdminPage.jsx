@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 import RichTextEditor from "../components/RichTextEditor";
+import MultiUrlField from "../components/MultiUrlField";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const S = { bg:"#0a0f0a", card:"#111611", border:"#1e2a1e", accent:"#22c55e", accentDk:"#15803d", text:"#e8f5e9", dim:"#6b8a6b", dimmer:"#4a6b4a", hover:"#1a261a", danger:"#f87171", dangerBg:"#261a1a", dangerBd:"#3a2a2a", warning:"#fbbf24", warningBg:"#1a1a0a" };
@@ -40,10 +41,10 @@ const FIELD_DEFS = {
   events: [ {key:"title",label:"Event Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Conference","Workshop","Webinar","Meeting"]},{key:"description",label:"Description",type:"textarea"},{key:"event_date",label:"Date",type:"date",required:true},{key:"event_time",label:"Time",type:"text"},{key:"location",label:"Location",type:"text"},{key:"loc_type",label:"Type",type:"select",options:["physical","virtual"]},{key:"image",label:"Event Banner",type:"image"},{key:"link",label:"Registration Link",type:"text"} ],
   articles: [ {key:"title",label:"Title",type:"text",required:true},{key:"tag",label:"Category",type:"select",options:["Insights","National","State News","Spotlights"]},{key:"publish_date",label:"Date",type:"date",required:true},{key:"description",label:"Short Description",type:"textarea"},{key:"image",label:"Cover Image",type:"image"},{key:"author",label:"Author",type:"text"},{key:"company",label:"Company",type:"text"},{key:"phone",label:"Phone",type:"text"},{key:"content",label:"Full Content",type:"richtext",ph:"Write the full article. Use the toolbar for headings, links, lists, images, etc."} ],
   resources: [ {key:"title",label:"Title",type:"text",required:true},{key:"description",label:"Description",type:"textarea"},{key:"file_url",label:"File",type:"file",required:true,allowPrivate:true},{key:"category",label:"Category",type:"select",options:["Newsletter","Report","Policy","General"]},{key:"publish_date",label:"Date",type:"date"} ],
-  galleries: [ {key:"title",label:"Event/Gallery Title",type:"text",required:true},{key:"event_date",label:"Date",type:"date",required:true},{key:"description",label:"Description",type:"textarea"},{key:"youtube_url",label:"YouTube URL (Optional)",type:"text",ph:"https://www.youtube.com/watch?v=..."},{key:"images",label:"Gallery Images",type:"image_list"} ],
+  galleries: [ {key:"title",label:"Event/Gallery Title",type:"text",required:true},{key:"event_date",label:"Date",type:"date",required:true},{key:"description",label:"Description",type:"textarea"},{key:"youtube_urls",label:"YouTube URLs (Optional)",type:"url_list",ph:"https://www.youtube.com/watch?v=..."},{key:"images",label:"Gallery Images",type:"image_list"} ],
 };
 
-const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)}, galleries:{title:"",event_date:new Date().toISOString().slice(0,10),description:"",youtube_url:"",images:"[]"} };
+const EMPTY = { boardOfTrustees:{name:"",role:"",image:""}, leaders:{name:"",role:"",dept:"",image:""}, regional:{name:"",region:"South-South",image:""}, state:{name:"",state:"",image:""}, events:{title:"",tag:"Conference",description:"",event_date:"",event_time:"",location:"",loc_type:"physical",image:"",link:""}, articles:{title:"",tag:"Insights",publish_date:new Date().toISOString().slice(0,10),description:"",image:"",author:"",phone:"",company:"",content:""}, resources:{title:"",description:"",file_url:"",category:"General",publish_date:new Date().toISOString().slice(0,10)}, galleries:{title:"",event_date:new Date().toISOString().slice(0,10),description:"",youtube_urls:"[]",images:"[]"} };
 
 function SessionPill({ expiresAt, onExtend }) {
   const [remaining, setRemaining] = useState(() => expiresAt - Date.now());
@@ -490,7 +491,7 @@ export default function AdminPage({ setPage: setAppPage }) {
         events: (raw.events||[]).map(e=>({...e,event_date:e.event_date?e.event_date.slice(0,10):"",event_time:e.event_time||""})),
         articles: (raw.articles||[]).map(a=>({...a,publish_date:a.publish_date?a.publish_date.slice(0,10):""})),
         resources: (raw.resources||[]).map(r=>({...r,publish_date:r.publish_date?r.publish_date.slice(0,10):""})),
-        galleries: (raw.galleries||[]).map(g=>({...g,event_date:g.event_date?g.event_date.slice(0,10):""}))
+        galleries: (raw.galleries||[]).map(g=>({...g,event_date:g.event_date?g.event_date.slice(0,10):"",youtube_urls:g.youtube_urls||"[]"}))
       });
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -624,6 +625,21 @@ export default function AdminPage({ setPage: setAppPage }) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:800,color:S.text}}>{isNew?"Add":"Edit"}</h3><button onClick={()=>{setEditItem(null);setEditType(null);}} style={{background:"none",border:"none",color:S.dim,fontSize:20,cursor:"pointer"}}>✕</button></div>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
             {fields.map(f => {
+              if (f.type === "url_list") {
+                const urlList = (typeof editItem[f.key] === "string" ? JSON.parse(editItem[f.key] || "[]") : editItem[f.key]) || [];
+                return (
+                  <div key={f.key}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.dimmer, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8 }}>
+                      {f.label} ({urlList.length} added)
+                    </label>
+                    <MultiUrlField
+                      value={urlList}
+                      onChange={(newList) => setEditItem({ ...editItem, [f.key]: JSON.stringify(newList) })}
+                      placeholder={f.ph}
+                    />
+                  </div>
+                );
+              }
               if (f.type === "image_list") {
                 const list = (typeof editItem[f.key] === "string" ? JSON.parse(editItem[f.key] || "[]") : editItem[f.key]) || [];
                 return (

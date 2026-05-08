@@ -14,6 +14,7 @@
 //      preloaded silently so navigation feels instant.
 //   4. Auto-play paused while images haven't loaded yet, and on tab visibility
 //      change so background tabs don't spin.
+//   5. NEW: Multiple YouTube videos supported via gallery.youtubeUrls (array).
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { COLORS, FONTS } from "../styles/tokens";
@@ -40,7 +41,7 @@ const PRELOAD_TRANSFORM = VIEWER_TRANSFORM;
 
 function getEmbedUrl(url) {
   if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
   return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : url;
 }
 
@@ -135,6 +136,16 @@ export default function GalleryDetailPage({ setPage, gallery }) {
   const images = gallery?.images || [];
   const total = images.length;
 
+  // Convert YouTube URLs into embed-ready URLs. Supports the new array
+  // (`youtubeUrls`) and falls back to a legacy single `youtubeUrl` for
+  // backward compatibility.
+  const embedUrls = useMemo(() => {
+    if (!gallery) return [];
+    const list = Array.isArray(gallery.youtubeUrls) ? gallery.youtubeUrls
+      : (gallery.youtubeUrl ? [gallery.youtubeUrl] : []);
+    return list.map(getEmbedUrl).filter(Boolean);
+  }, [gallery]);
+
   const nextSlide = useCallback(() => setIdx((prev) => (prev + 1) % total), [total]);
   const prevSlide = useCallback(() => setIdx((prev) => (prev === 0 ? total - 1 : prev - 1)), [total]);
 
@@ -210,8 +221,6 @@ export default function GalleryDetailPage({ setPage, gallery }) {
     );
   }
 
-  const embedUrl = getEmbedUrl(gallery.youtubeUrl);
-
   return (
     <article style={{ minHeight: "100vh", background: COLORS.surface, paddingBottom: 80 }}>
       {/* Fullscreen Lightbox */}
@@ -263,13 +272,18 @@ export default function GalleryDetailPage({ setPage, gallery }) {
         <h1 style={{ fontFamily: FONTS.headline, fontSize: m ? 24 : 36, fontWeight: 800, color: COLORS.onSurface, letterSpacing: "-1px", marginBottom: 8 }}>
           {gallery.title}
         </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: 600 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: 600, flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <Icon name="calendar_month" size={16} /> {gallery.date}
           </span>
           {total > 0 && (
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Icon name="photo_library" size={16} /> {total} {total === 1 ? "image" : "images"}
+            </span>
+          )}
+          {embedUrls.length > 0 && (
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="play_circle" size={16} /> {embedUrls.length} {embedUrls.length === 1 ? "video" : "videos"}
             </span>
           )}
         </div>
@@ -284,18 +298,36 @@ export default function GalleryDetailPage({ setPage, gallery }) {
           </FadeIn>
         )}
 
-        {embedUrl && (
+        {/* Multiple videos: render each in its own embed. Single video gets full
+            width; multiple videos lay out in a 2-column grid on desktop. */}
+        {embedUrls.length > 0 && (
           <FadeIn delay={0.1}>
-            <div style={{ marginBottom: 56, background: "#000", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.15)" }}>
-              <div style={{ position: "relative", paddingTop: "56.25%" }}>
-                <iframe
-                  src={embedUrl}
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-                />
+            <div style={{ marginBottom: 56 }}>
+              {embedUrls.length > 1 && (
+                <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 18 : 22, fontWeight: 700, color: COLORS.onSurface, marginBottom: 16 }}>
+                  Videos ({embedUrls.length})
+                </h3>
+              )}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: m ? "1fr" : (embedUrls.length === 1 ? "1fr" : "repeat(2, 1fr)"),
+                gap: 20,
+              }}>
+                {embedUrls.map((url, i) => (
+                  <div key={i} style={{ background: "#000", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.15)" }}>
+                    <div style={{ position: "relative", paddingTop: "56.25%" }}>
+                      <iframe
+                        src={url}
+                        title={`YouTube video ${i + 1}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        loading="lazy"
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </FadeIn>

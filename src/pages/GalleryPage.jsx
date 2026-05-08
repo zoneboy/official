@@ -3,6 +3,8 @@
 // a Cloudinary-transformed version (`w_600,h_400,c_fill,q_auto,f_auto`) instead
 // of the full-resolution original. With 230-image galleries the original
 // could easily be a 4 MB file rendered into a 220px-tall card.
+//
+// NEW: The "Video" badge now reflects the count of YouTube videos attached.
 
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
@@ -48,6 +50,7 @@ export default function GalleryPage({ setPage, setCurrentGallery }) {
         <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 16 : 24 }}>
           {galleries.map((g, i) => {
             const thumb = g.images.length > 0 ? cld(g.images[0], CARD_THUMB) : null;
+            const videoCount = (g.youtubeUrls || []).length;
             return (
               <FadeIn key={g.id} delay={i * 0.08}>
                 <article
@@ -58,15 +61,15 @@ export default function GalleryPage({ setPage, setCurrentGallery }) {
                 >
                   <div style={{ height: 220, background: thumb ? `url(${thumb}) center/cover` : g.gradient, position: "relative" }}>
                     <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)" }} />
-                    <div style={{ position: "absolute", bottom: 16, left: 16, display: "flex", gap: 10 }}>
+                    <div style={{ position: "absolute", bottom: 16, left: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
                       {g.images.length > 0 && (
                         <span style={{ background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, backdropFilter: "blur(4px)" }}>
                           <Icon name="photo_library" size={14} /> {g.images.length}
                         </span>
                       )}
-                      {g.youtubeUrl && (
+                      {videoCount > 0 && (
                         <span style={{ background: "rgba(220,38,38,0.8)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, backdropFilter: "blur(4px)" }}>
-                          <Icon name="play_arrow" size={14} /> Video
+                          <Icon name="play_arrow" size={14} /> {videoCount} {videoCount === 1 ? "Video" : "Videos"}
                         </span>
                       )}
                     </div>

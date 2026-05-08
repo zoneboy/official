@@ -42,7 +42,7 @@ export const handler = async (event) => {
           await sql`INSERT INTO resources(id,title,description,file_url,category,publish_date,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.file_url||''},${item.category||'General'},${item.publish_date||null},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,file_url=EXCLUDED.file_url,category=EXCLUDED.category,publish_date=EXCLUDED.publish_date,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
         case "galleries":
-          await sql`INSERT INTO galleries(id,title,description,event_date,youtube_url,images,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.event_date||null},${item.youtube_url||''},${item.images||'[]'},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,event_date=EXCLUDED.event_date,youtube_url=EXCLUDED.youtube_url,images=EXCLUDED.images,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
+          await sql`INSERT INTO galleries(id,title,description,event_date,youtube_urls,images,sort_order,updated_at) VALUES(${iid},${item.title||''},${item.description||''},${item.event_date||null},${item.youtube_urls||'[]'},${item.images||'[]'},${item.sort_order||0},NOW()) ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,event_date=EXCLUDED.event_date,youtube_urls=EXCLUDED.youtube_urls,images=EXCLUDED.images,sort_order=EXCLUDED.sort_order,updated_at=NOW()`;
           break;
         default: return err(`Unknown table: ${table}`, 400, event);
       }

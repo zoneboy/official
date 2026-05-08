@@ -69,11 +69,18 @@ function xResource(r) {
 function xGallery(r, i) {
   var d = r.event_date ? new Date(r.event_date) : null;
   var imagesArr = [];
+  var youtubeArr = [];
   try { imagesArr = JSON.parse(r.images || "[]"); } catch(e) {}
+  // New: parse youtube_urls as an array. Fall back to legacy single youtube_url
+  // field if the new column doesn't exist or is empty (handles old data gracefully).
+  try { youtubeArr = JSON.parse(r.youtube_urls || "[]"); } catch(e) {}
+  if (youtubeArr.length === 0 && r.youtube_url && typeof r.youtube_url === "string" && r.youtube_url.trim()) {
+    youtubeArr = [r.youtube_url.trim()];
+  }
   return {
     id: r.id, title: r.title, description: r.description,
     date: d ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" }) : "Unpublished",
-    youtubeUrl: r.youtube_url || "", images: imagesArr, gradient: GRADS[i % GRADS.length]
+    youtubeUrls: youtubeArr, images: imagesArr, gradient: GRADS[i % GRADS.length]
   };
 }
 
