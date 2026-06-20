@@ -22,6 +22,19 @@ function cld(url, transform) {
 
 const CARD_THUMB = "w_600,h_400,c_fill,q_auto,f_auto";
 
+// Pull a YouTube ID so video-only galleries can still show a real thumbnail.
+function getYouTubeId(url) {
+  if (!url || typeof url !== "string") return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+// Strip HTML tags from the (now rich-text) description for the card preview.
+function stripHtml(html) {
+  if (!html || typeof html !== "string") return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+}
+
 export default function GalleryPage({ setPage, setCurrentGallery }) {
   const { isMobile: m, isTablet } = useBreakpoints();
   const { galleries, loading } = useCMSData();
@@ -49,8 +62,15 @@ export default function GalleryPage({ setPage, setCurrentGallery }) {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: cols, gap: m ? 16 : 24 }}>
           {galleries.map((g, i) => {
-            const thumb = g.images.length > 0 ? cld(g.images[0], CARD_THUMB) : null;
             const videoCount = (g.youtubeUrls || []).length;
+            const firstVideoId = (g.youtubeUrls || []).map(getYouTubeId).find(Boolean);
+            // Prefer the first gallery image; if there are none, fall back to the
+            // first video's YouTube thumbnail so the card is never blank.
+            const thumb = g.images.length > 0
+              ? cld(g.images[0], CARD_THUMB)
+              : (firstVideoId ? `https://i.ytimg.com/vi/${firstVideoId}/hqdefault.jpg` : null);
+            const isVideoThumb = g.images.length === 0 && !!firstVideoId;
+            const descText = stripHtml(g.description);
             return (
               <FadeIn key={g.id} delay={i * 0.08}>
                 <article
@@ -61,6 +81,13 @@ export default function GalleryPage({ setPage, setCurrentGallery }) {
                 >
                   <div style={{ height: 220, background: thumb ? `url(${thumb}) center/cover` : g.gradient, position: "relative" }}>
                     <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)" }} />
+                    {isVideoThumb && (
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(220,38,38,0.92)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
+                          <Icon name="play_arrow" size={32} style={{ color: "#fff", marginLeft: 3 }} />
+                        </span>
+                      </div>
+                    )}
                     <div style={{ position: "absolute", bottom: 16, left: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
                       {g.images.length > 0 && (
                         <span style={{ background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, backdropFilter: "blur(4px)" }}>
@@ -78,7 +105,7 @@ export default function GalleryPage({ setPage, setCurrentGallery }) {
                     <span style={{ fontSize: 11, color: COLORS.secondary, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>{g.date}</span>
                     <h3 style={{ fontFamily: FONTS.headline, fontSize: 18, fontWeight: 800, color: COLORS.onSurface, marginBottom: 8 }}>{g.title}</h3>
                     <p style={{ color: COLORS.onSurfaceVariant, fontSize: 13, lineHeight: 1.6, flex: 1 }}>
-                      {g.description.slice(0, 100)}{g.description.length > 100 ? "..." : ""}
+                      {descText.slice(0, 100)}{descText.length > 100 ? "..." : ""}
                     </p>
                   </div>
                 </article>

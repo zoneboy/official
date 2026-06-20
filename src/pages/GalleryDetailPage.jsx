@@ -17,6 +17,7 @@
 //   5. NEW: Multiple YouTube videos supported via gallery.youtubeUrls (array).
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { COLORS, FONTS } from "../styles/tokens";
 import { useBreakpoints } from "../hooks";
 import { FadeIn, Icon } from "../components";
@@ -39,11 +40,38 @@ const VIEWER_TRANSFORM = "w_1600,q_auto,f_auto,c_limit";
 const THUMB_TRANSFORM = "w_160,h_120,c_fill,q_auto,f_auto";
 const PRELOAD_TRANSFORM = VIEWER_TRANSFORM;
 
-function getEmbedUrl(url) {
+function getYouTubeId(url) {
   if (!url) return null;
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
-  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : url;
+  return match ? match[1] : null;
 }
+
+function getEmbedUrl(url) {
+  if (!url) return null;
+  const id = getYouTubeId(url);
+  return id ? `https://www.youtube.com/embed/${id}?rel=0` : url;
+}
+
+// Extract a poster thumbnail for a YouTube video so the embed area shows the
+// video's still frame instead of a blank black box before it's clicked.
+function getVideoThumb(url) {
+  const id = getYouTubeId(url);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+}
+
+// Detect whether the description came from the WYSIWYG editor (HTML) or is
+// legacy plain text, so old galleries still render correctly.
+function isHtmlContent(content) {
+  if (!content || typeof content !== "string") return false;
+  return /<(p|h[1-6]|ul|ol|li|blockquote|strong|em|a|img|br)\b/i.test(content);
+}
+
+const DESC_SANITIZE = {
+  ALLOWED_TAGS: ["p", "br", "strong", "em", "b", "i", "u", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "a", "img", "hr", "span"],
+  ALLOWED_ATTR: ["href", "target", "rel", "src", "alt", "title", "style"],
+  ALLOWED_URI_REGEXP: /^(https?:|mailto:|tel:|\/|#)/i,
+  ADD_ATTR: ["target", "rel"],
+};
 
 // ── Virtualized thumbnail strip ──
 // Renders only thumbs whose index is within `buffer` of the visible viewport.
@@ -127,6 +155,10 @@ export default function GalleryDetailPage({ setPage, gallery }) {
   const [idx, setIdx] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mainLoaded, setMainLoaded] = useState(false);
+  // Track which video posters the user has clicked to start playing. Until a
+  // video is played we render its thumbnail (not the iframe), so the gallery
+  // never shows a blank player and we avoid loading several iframes at once.
+  const [playingVideos, setPlayingVideos] = useState(() => new Set());
 
   // Swipe state
   const [touchStart, setTouchStart] = useState(null);
@@ -139,11 +171,13 @@ export default function GalleryDetailPage({ setPage, gallery }) {
   // Convert YouTube URLs into embed-ready URLs. Supports the new array
   // (`youtubeUrls`) and falls back to a legacy single `youtubeUrl` for
   // backward compatibility.
-  const embedUrls = useMemo(() => {
+  const videos = useMemo(() => {
     if (!gallery) return [];
     const list = Array.isArray(gallery.youtubeUrls) ? gallery.youtubeUrls
       : (gallery.youtubeUrl ? [gallery.youtubeUrl] : []);
-    return list.map(getEmbedUrl).filter(Boolean);
+    return list
+      .map((url) => ({ embedUrl: getEmbedUrl(url), thumb: getVideoThumb(url) }))
+      .filter((v) => v.embedUrl);
   }, [gallery]);
 
   const nextSlide = useCallback(() => setIdx((prev) => (prev + 1) % total), [total]);
@@ -223,6 +257,19 @@ export default function GalleryDetailPage({ setPage, gallery }) {
 
   return (
     <article style={{ minHeight: "100vh", background: COLORS.surface, paddingBottom: 80 }}>
+      <style>{`
+        .ran-gallery-desc h2, .ran-gallery-desc h3, .ran-gallery-desc h4 { color: ${COLORS.onSurface}; font-family: ${FONTS.headline}; font-weight: 800; line-height: 1.3; margin: 1.4em 0 0.5em; }
+        .ran-gallery-desc h2 { font-size: 1.5em; }
+        .ran-gallery-desc h3 { font-size: 1.25em; }
+        .ran-gallery-desc h4 { font-size: 1.1em; }
+        .ran-gallery-desc p { margin: 0 0 1em; }
+        .ran-gallery-desc ul, .ran-gallery-desc ol { margin: 0 0 1em; padding-left: 1.5em; }
+        .ran-gallery-desc li { margin: 0.3em 0; }
+        .ran-gallery-desc a { color: ${COLORS.primary}; text-decoration: underline; }
+        .ran-gallery-desc blockquote { margin: 1em 0; padding: 0.5em 1em; border-left: 4px solid ${COLORS.primary}; color: ${COLORS.onSurface}; background: ${COLORS.surfaceContainerLowest}; border-radius: 0 8px 8px 0; }
+        .ran-gallery-desc img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; }
+        .ran-gallery-desc > *:last-child { margin-bottom: 0; }
+      `}</style>
       {/* Fullscreen Lightbox */}
       {isFullscreen && total > 0 && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
@@ -281,9 +328,9 @@ export default function GalleryDetailPage({ setPage, gallery }) {
               <Icon name="photo_library" size={16} /> {total} {total === 1 ? "image" : "images"}
             </span>
           )}
-          {embedUrls.length > 0 && (
+          {videos.length > 0 && (
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <Icon name="play_circle" size={16} /> {embedUrls.length} {embedUrls.length === 1 ? "video" : "videos"}
+              <Icon name="play_circle" size={16} /> {videos.length} {videos.length === 1 ? "video" : "videos"}
             </span>
           )}
         </div>
@@ -292,42 +339,75 @@ export default function GalleryDetailPage({ setPage, gallery }) {
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: m ? "32px 20px" : "48px 32px" }}>
         {gallery.description && (
           <FadeIn>
-            <p style={{ fontSize: m ? 15 : 17, color: COLORS.onSurfaceVariant, lineHeight: 1.8, marginBottom: 48, padding: m ? "0" : "0 20px" }}>
-              {gallery.description}
-            </p>
+            {isHtmlContent(gallery.description) ? (
+              <div
+                className="ran-gallery-desc"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(gallery.description, DESC_SANITIZE) }}
+                style={{ fontSize: m ? 15 : 17, color: COLORS.onSurfaceVariant, lineHeight: 1.8, marginBottom: 48, padding: m ? "0" : "0 20px" }}
+              />
+            ) : (
+              <p style={{ fontSize: m ? 15 : 17, color: COLORS.onSurfaceVariant, lineHeight: 1.8, marginBottom: 48, padding: m ? "0" : "0 20px" }}>
+                {gallery.description}
+              </p>
+            )}
           </FadeIn>
         )}
 
         {/* Multiple videos: render each in its own embed. Single video gets full
             width; multiple videos lay out in a 2-column grid on desktop. */}
-        {embedUrls.length > 0 && (
+        {videos.length > 0 && (
           <FadeIn delay={0.1}>
             <div style={{ marginBottom: 56 }}>
-              {embedUrls.length > 1 && (
+              {videos.length > 1 && (
                 <h3 style={{ fontFamily: FONTS.headline, fontSize: m ? 18 : 22, fontWeight: 700, color: COLORS.onSurface, marginBottom: 16 }}>
-                  Videos ({embedUrls.length})
+                  Videos ({videos.length})
                 </h3>
               )}
               <div style={{
                 display: "grid",
-                gridTemplateColumns: m ? "1fr" : (embedUrls.length === 1 ? "1fr" : "repeat(2, 1fr)"),
+                gridTemplateColumns: m ? "1fr" : (videos.length === 1 ? "1fr" : "repeat(2, 1fr)"),
                 gap: 20,
               }}>
-                {embedUrls.map((url, i) => (
-                  <div key={i} style={{ background: "#000", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.15)" }}>
-                    <div style={{ position: "relative", paddingTop: "56.25%" }}>
-                      <iframe
-                        src={url}
-                        title={`YouTube video ${i + 1}`}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        loading="lazy"
-                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-                      />
+                {videos.map((v, i) => {
+                  const isPlaying = playingVideos.has(i);
+                  return (
+                    <div key={i} style={{ background: "#000", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.15)" }}>
+                      <div style={{ position: "relative", paddingTop: "56.25%" }}>
+                        {isPlaying ? (
+                          <iframe
+                            src={`${v.embedUrl}${v.embedUrl.includes("?") ? "&" : "?"}autoplay=1`}
+                            title={`YouTube video ${i + 1}`}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPlayingVideos((prev) => new Set(prev).add(i))}
+                            aria-label={`Play video ${i + 1}`}
+                            style={{
+                              position: "absolute", inset: 0, width: "100%", height: "100%", padding: 0, border: "none", cursor: "pointer",
+                              background: v.thumb ? `#000 url(${v.thumb}) center/cover no-repeat` : "#000",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}
+                          >
+                            <span style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.05))" }} />
+                            <span style={{
+                              position: "relative", width: 68, height: 68, borderRadius: "50%",
+                              background: "rgba(220,38,38,0.92)", display: "flex", alignItems: "center", justifyContent: "center",
+                              boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+                            }}>
+                              <Icon name="play_arrow" size={40} style={{ color: "#fff", marginLeft: 4 }} />
+                            </span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </FadeIn>
